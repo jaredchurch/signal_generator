@@ -19,278 +19,127 @@
       --yellow: #fbbf24;
       --text: #e2e8f0;
       --muted: #64748b;
-      --font: 'Segoe UI', system-ui, sans-serif;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      min-height: 100vh;
-      padding: 20px;
-    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 20px; }
 
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    header h1 {
-      font-size: 2rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     header p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 20px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
+    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; }
+    @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
 
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-    }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .card h2 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 14px; }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-    }
-
-    .card h2 {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      margin-bottom: 14px;
-    }
-
-    /* ---- Presets ---- */
-    .presets {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .preset-btn {
-      flex: 1;
-      min-width: 80px;
-      padding: 8px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      background: var(--card2);
-      color: var(--text);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
+    /* Presets */
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .preset-btn { flex: 1; min-width: 68px; padding: 7px 8px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--card2); color: var(--text); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
     .preset-btn:hover { border-color: var(--accent); background: #2a2f4a; }
     .preset-btn.active { border-color: var(--accent); background: rgba(108,138,255,0.15); color: var(--accent); }
 
-    .fund-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+    /* Noise presets row */
+    .noise-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .noise-btn { flex: 1; min-width: 80px; padding: 7px 8px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--card2); color: var(--text); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: border-color 0.2s; }
+    .noise-btn:hover { border-color: var(--yellow); }
+    .noise-btn.active { border-color: var(--yellow); background: rgba(251,191,36,0.12); color: var(--yellow); }
+
+    /* Fundamental row */
+    .fund-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .fund-row label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-    .fund-row input {
-      width: 90px;
-      background: var(--card2);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 6px 10px;
-      font-size: 0.9rem;
-    }
-    .fund-row input:focus { outline: none; border-color: var(--accent); }
-    .fund-row span { color: var(--muted); font-size: 0.8rem; }
+    .fund-row input[type="number"] { width: 80px; background: var(--card2); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); padding: 5px 8px; font-size: 0.88rem; }
+    .fund-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
+    .fund-unit { display: flex; gap: 4px; }
+    .unit-btn { padding: 4px 10px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--card2); color: var(--muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+    .unit-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(108,138,255,0.1); }
 
-    /* ---- Harmonics grid ---- */
-    .harmonics-header {
-      display: grid;
-      grid-template-columns: 28px 1fr 80px 36px;
-      gap: 6px;
-      align-items: center;
-      margin-bottom: 6px;
-      padding: 0 2px;
-    }
-    .harmonics-header span { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    /* Note picker */
+    .note-picker { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .note-picker label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    select.styled { background: var(--card2); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); padding: 5px 8px; font-size: 0.85rem; }
+    select.styled:focus { outline: none; border-color: var(--accent); }
+    .note-freq-display { font-size: 0.78rem; color: var(--accent); min-width: 60px; }
 
-    .harmonic-row {
-      display: grid;
-      grid-template-columns: 28px 1fr 80px 36px;
-      gap: 6px;
-      align-items: center;
-      margin-bottom: 5px;
-    }
+    /* Harmonics */
+    .harmonics-header { display: grid; grid-template-columns: 22px 1fr 72px 34px; gap: 5px; align-items: center; margin-bottom: 6px; padding: 0 2px; }
+    .harmonics-header span { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
-    .harmonic-row .idx {
-      font-size: 0.72rem;
-      color: var(--muted);
-      text-align: center;
-    }
+    .harmonic-row { display: grid; grid-template-columns: 22px 1fr 72px 34px; gap: 5px; align-items: center; margin-bottom: 4px; }
+    .harmonic-row .idx { font-size: 0.7rem; color: var(--muted); text-align: center; }
 
-    .harmonic-row input[type="number"] {
-      background: var(--card2);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 5px 8px;
-      font-size: 0.85rem;
-      width: 100%;
+    .freq-input-wrap { position: relative; display: flex; align-items: center; }
+    .freq-input-wrap input[type="text"] {
+      background: var(--card2); border: 1.5px solid var(--border); border-radius: 8px;
+      color: var(--text); padding: 4px 32px 4px 7px; font-size: 0.82rem; width: 100%;
     }
-    .harmonic-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
-    .harmonic-row input[type="number"].active-freq { border-color: var(--accent); }
+    .freq-input-wrap input[type="text"]:focus { outline: none; border-color: var(--accent); }
+    .freq-input-wrap input[type="text"].active-freq { border-color: var(--accent); }
+    .freq-unit-toggle { position: absolute; right: 4px; font-size: 0.65rem; color: var(--muted); cursor: pointer; padding: 2px 3px; border-radius: 4px; user-select: none; background: var(--border); }
+    .freq-unit-toggle:hover { color: var(--accent); }
 
-    .harmonic-row input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
+    .harmonic-row input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .amp-val { font-size: 0.75rem; color: var(--muted); text-align: right; min-width: 32px; }
 
-    .amp-val {
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-align: right;
-      min-width: 34px;
-    }
-
-    .harmonics-scroll {
-      max-height: 420px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
+    .harmonics-scroll { max-height: 400px; overflow-y: auto; padding-right: 4px; }
     .harmonics-scroll::-webkit-scrollbar { width: 4px; }
-    .harmonics-scroll::-webkit-scrollbar-track { background: transparent; }
     .harmonics-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* ---- Playback controls ---- */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .vol-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    /* Volume / playback */
+    .vol-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .vol-row label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
     .vol-row input { flex: 1; accent-color: var(--accent); }
     .vol-row span { font-size: 0.8rem; color: var(--text); min-width: 36px; text-align: right; }
 
-    .btn-row { display: flex; gap: 10px; }
-
-    .btn {
-      flex: 1;
-      padding: 11px;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
-    }
+    .btn-row { display: flex; gap: 8px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
     .btn:active { transform: scale(0.97); }
-    .btn-play  { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
-    .btn-stop  { background: var(--card2); border: 1.5px solid var(--border); color: var(--text); }
-    .btn-rec   { background: linear-gradient(135deg, #ef4444, #f97316); color: white; }
+    .btn:disabled { opacity: 0.38; cursor: default; }
+    .btn-play { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+    .btn-stop { background: var(--card2); border: 1.5px solid var(--border); color: var(--text); }
+    .btn-rec  { background: linear-gradient(135deg, #ef4444, #f97316); color: white; }
+    .btn-playback { background: linear-gradient(135deg, #34d399, #059669); color: white; }
     .btn-rec.recording { animation: pulse 1s infinite; }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.6; }
-    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
 
-    .btn:disabled { opacity: 0.4; cursor: default; }
+    /* Record section */
+    .rec-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+    .rec-dur-label { font-size: 0.8rem; color: var(--muted); }
+    .rec-status { font-size: 0.8rem; color: var(--red); text-align: center; min-height: 18px; }
 
-    /* ---- Graphs ---- */
+    /* Graphs */
     .graphs { display: flex; flex-direction: column; gap: 16px; }
-
     .graph-card { position: relative; }
-
     .graph-card h2 { margin-bottom: 10px; }
 
-    canvas {
-      width: 100%;
-      height: 180px;
-      display: block;
-      border-radius: 10px;
-      background: #0a0c14;
-    }
+    canvas { width: 100%; height: 200px; display: block; border-radius: 10px; background: #0a0c14; }
 
-    canvas.tall { height: 220px; }
-
-    .rec-status {
-      font-size: 0.8rem;
-      color: var(--red);
-      text-align: center;
-      min-height: 18px;
-      margin-top: 6px;
-    }
-
-    .tag {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      margin-left: 8px;
-      vertical-align: middle;
-    }
+    .tag { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
     .tag-gen { background: rgba(108,138,255,0.2); color: var(--accent); }
     .tag-rec { background: rgba(248,113,113,0.2); color: var(--red); }
 
-    .rec-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .rec-dur-label { font-size: 0.8rem; color: var(--muted); }
-    .rec-dur-select {
-      background: var(--card2);
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      padding: 5px 10px;
-      font-size: 0.85rem;
-    }
+    .no-data { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.85rem; pointer-events: none; border-radius: 10px; }
 
-    .no-data {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 0.85rem;
-      pointer-events: none;
-    }
+    .noise-indicator { display: inline-block; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; background: rgba(251,191,36,0.15); color: var(--yellow); }
+
+    .left-panel { display: flex; flex-direction: column; gap: 16px; }
   </style>
 </head>
 <body>
 <header>
   <h1>🎛️ Signal Generator</h1>
-  <p>Compose up to 32 sine waves · visualise time &amp; frequency domain · record &amp; analyse</p>
+  <p>32 sine components · noise generators · note picker · time &amp; frequency domain · record &amp; playback</p>
 </header>
 
 <div class="layout">
 
-  <!-- LEFT PANEL -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
+  <!-- ═══ LEFT PANEL ═══ -->
+  <div class="left-panel">
 
-    <!-- Presets -->
+    <!-- Presets card -->
     <div class="card">
-      <h2>Presets</h2>
+      <h2>Wave Presets</h2>
       <div class="presets">
         <button class="preset-btn" onclick="applyPreset('sine')">Sine</button>
         <button class="preset-btn" onclick="applyPreset('square')">Square</button>
@@ -298,19 +147,54 @@
         <button class="preset-btn" onclick="applyPreset('triangle')">Triangle</button>
         <button class="preset-btn" onclick="applyPreset('clear')">Clear</button>
       </div>
+
+      <h2 style="margin-top:4px;">Noise Presets</h2>
+      <div class="noise-presets">
+        <button class="noise-btn" id="noise-white-btn"  onclick="applyNoise('white')">⬜ White</button>
+        <button class="noise-btn" id="noise-pink-btn"   onclick="applyNoise('pink')">🌸 Pink</button>
+        <button class="noise-btn" id="noise-brown-btn"  onclick="applyNoise('brown')">🟤 Brown</button>
+        <button class="noise-btn" id="noise-off-btn"    onclick="applyNoise('off')">Off</button>
+      </div>
+
+      <!-- Fundamental + unit -->
       <div class="fund-row">
         <label>Fundamental:</label>
-        <input type="number" id="fundamental" value="220" min="1" max="20000" step="1" oninput="onFundamentalChange()"/>
-        <span>Hz</span>
+        <input type="number" id="fundamental" value="220" min="0.001" max="24000" step="any" oninput="onFundamentalChange()"/>
+        <div class="fund-unit">
+          <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
+          <button class="unit-btn"        id="unit-khz" onclick="setFundUnit('khz')">kHz</button>
+        </div>
+      </div>
+
+      <!-- Note picker -->
+      <div class="note-picker">
+        <label>Note:</label>
+        <select class="styled" id="note-select" onchange="onNoteSelect()">
+          <option value="">— pick —</option>
+        </select>
+        <select class="styled" id="octave-select" onchange="onNoteSelect()">
+          <option value="0">Oct 0</option>
+          <option value="1">Oct 1</option>
+          <option value="2">Oct 2</option>
+          <option value="3">Oct 3</option>
+          <option value="4" selected>Oct 4</option>
+          <option value="5">Oct 5</option>
+          <option value="6">Oct 6</option>
+          <option value="7">Oct 7</option>
+          <option value="8">Oct 8</option>
+          <option value="9">Oct 9</option>
+        </select>
+        <span class="note-freq-display" id="note-freq-display"></span>
+        <button class="btn btn-play" style="flex:0;padding:5px 10px;font-size:0.78rem;border-radius:8px;" onclick="setFundamentalFromNote()">Set</button>
       </div>
     </div>
 
-    <!-- Harmonics -->
-    <div class="card" style="flex:1;">
-      <h2>Harmonics / Frequencies</h2>
+    <!-- Harmonics / Frequencies -->
+    <div class="card">
+      <h2>Components <span id="noise-label" style="display:none" class="noise-indicator"></span></h2>
       <div class="harmonics-header">
         <span>#</span>
-        <span>Freq (Hz)</span>
+        <span>Frequency</span>
         <span>Amplitude</span>
         <span></span>
       </div>
@@ -319,26 +203,24 @@
 
     <!-- Playback -->
     <div class="card">
-      <h2>Playback</h2>
-      <div class="controls">
-        <div class="vol-row">
-          <label>Volume</label>
-          <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5" oninput="onVolumeChange()"/>
-          <span id="vol-label">50%</span>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-play" id="play-btn" onclick="togglePlay()">▶ Play</button>
-          <button class="btn btn-stop" onclick="stopPlay()">■ Stop</button>
-        </div>
+      <h2>Generated Playback</h2>
+      <div class="vol-row">
+        <label>Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5" oninput="onVolumeChange()"/>
+        <span id="vol-label">50%</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-play" id="play-btn" onclick="togglePlay()">▶ Play</button>
+        <button class="btn btn-stop" onclick="stopPlay()">■ Stop</button>
       </div>
     </div>
 
     <!-- Record -->
     <div class="card">
-      <h2>Record Audio</h2>
+      <h2>Record &amp; Playback</h2>
       <div class="rec-controls">
-        <label class="rec-dur-label">Duration:</label>
-        <select class="rec-dur-select" id="rec-duration">
+        <span class="rec-dur-label">Duration:</span>
+        <select class="styled" id="rec-duration">
           <option value="2">2 s</option>
           <option value="4" selected>4 s</option>
           <option value="8">8 s</option>
@@ -346,37 +228,37 @@
         </select>
         <button class="btn btn-rec" id="rec-btn" onclick="toggleRecord()" style="flex:1;">⏺ Record</button>
       </div>
-      <div class="rec-status" id="rec-status"></div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-playback" id="playback-btn" onclick="playbackRecording()" disabled>▶ Play Recording</button>
+        <button class="btn btn-stop" id="playback-stop-btn" onclick="stopPlayback()" disabled>■ Stop</button>
+      </div>
+      <div class="rec-status" id="rec-status" style="margin-top:8px;"></div>
     </div>
 
   </div>
 
-  <!-- RIGHT PANEL -->
+  <!-- ═══ RIGHT PANEL ═══ -->
   <div class="graphs">
 
-    <!-- Generated time domain -->
     <div class="card graph-card">
       <h2>Time Domain <span class="tag tag-gen">Generated</span></h2>
-      <canvas id="canvas-time" class="tall"></canvas>
+      <canvas id="canvas-time"></canvas>
     </div>
 
-    <!-- Generated frequency domain -->
     <div class="card graph-card">
       <h2>Frequency Domain <span class="tag tag-gen">Generated</span></h2>
-      <canvas id="canvas-freq" class="tall"></canvas>
+      <canvas id="canvas-freq"></canvas>
     </div>
 
-    <!-- Recorded time domain -->
-    <div class="card graph-card" id="rec-time-card">
+    <div class="card graph-card">
       <h2>Time Domain <span class="tag tag-rec">Recorded</span></h2>
-      <canvas id="canvas-rec-time" class="tall"></canvas>
+      <canvas id="canvas-rec-time"></canvas>
       <div class="no-data" id="no-rec-time">Record audio to see waveform</div>
     </div>
 
-    <!-- Recorded frequency domain -->
-    <div class="card graph-card" id="rec-freq-card">
+    <div class="card graph-card">
       <h2>Frequency Domain <span class="tag tag-rec">Recorded</span></h2>
-      <canvas id="canvas-rec-freq" class="tall"></canvas>
+      <canvas id="canvas-rec-freq"></canvas>
       <div class="no-data" id="no-rec-freq">Record audio to see spectrum</div>
     </div>
 
@@ -384,132 +266,234 @@
 </div>
 
 <script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const NUM = 32;
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Note freq: A4 = 440 Hz, MIDI note = octave*12 + noteIndex, A4 = MIDI 69
+function noteToFreq(noteName, octave) {
+  const idx = NOTE_NAMES.indexOf(noteName);
+  if (idx < 0) return null;
+  const midi = (parseInt(octave) + 1) * 12 + idx; // C4 = MIDI 60
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
-const NUM_COMPONENTS = 32;
-let components = []; // { freq, amp }
+let components = Array.from({length: NUM}, () => ({freq: 0, amp: 0}));
+// Per-row display unit: 'hz' or 'khz'
+let rowUnit = Array.from({length: NUM}, () => 'hz');
+let fundUnit = 'hz'; // 'hz' or 'khz'
+
 let audioCtx = null;
 let masterGain = null;
+let analyserNode = null;
 let oscillators = [];
+let noiseSource = null;
+let noiseType = 'off'; // 'off','white','pink','brown'
 let isPlaying = false;
 let animFrame = null;
-let analyserNode = null;
 
 // Recording
 let mediaRecorder = null;
 let isRecording = false;
 let recChunks = [];
 let recCountdown = null;
+let recordedBlob = null;
+let playbackAudioEl = null;
+let isPlayingBack = false;
 
-// ─── Init ──────────────────────────────────────────────────────────────────────
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 function init() {
-  for (let i = 0; i < NUM_COMPONENTS; i++) {
-    components.push({ freq: 0, amp: 0 });
-  }
+  // Populate note picker
+  const sel = document.getElementById('note-select');
+  NOTE_NAMES.forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    sel.appendChild(opt);
+  });
   renderHarmonicsList();
-  drawGeneratedGraphs();
+  applyPreset('sine');
+}
+
+// ─── Note picker ──────────────────────────────────────────────────────────────
+function onNoteSelect() {
+  const note = document.getElementById('note-select').value;
+  const oct  = document.getElementById('octave-select').value;
+  if (!note) { document.getElementById('note-freq-display').textContent = ''; return; }
+  const f = noteToFreq(note, oct);
+  if (!f) return;
+  const capped = Math.min(f, 24000);
+  document.getElementById('note-freq-display').textContent =
+    f >= 1000 ? `${(f/1000).toFixed(3)} kHz` : `${f.toFixed(2)} Hz`;
+}
+
+function setFundamentalFromNote() {
+  const note = document.getElementById('note-select').value;
+  const oct  = document.getElementById('octave-select').value;
+  if (!note) return;
+  const f = Math.min(noteToFreq(note, oct), 24000);
+  // Set in current unit
+  const display = fundUnit === 'khz' ? (f / 1000) : f;
+  document.getElementById('fundamental').value = parseFloat(display.toFixed(4));
+  onFundamentalChange();
+}
+
+// ─── Fundamental unit ─────────────────────────────────────────────────────────
+function setFundUnit(u) {
+  const inp = document.getElementById('fundamental');
+  const currentHz = fundUnit === 'khz' ? parseFloat(inp.value || 0) * 1000 : parseFloat(inp.value || 0);
+  fundUnit = u;
+  inp.value = u === 'khz' ? parseFloat((currentHz / 1000).toFixed(5)) : parseFloat(currentHz.toFixed(2));
+  document.getElementById('unit-hz').classList.toggle('active', u === 'hz');
+  document.getElementById('unit-khz').classList.toggle('active', u === 'khz');
+  onFundamentalChange();
+}
+
+function getFundamentalHz() {
+  const v = parseFloat(document.getElementById('fundamental').value) || 0;
+  return fundUnit === 'khz' ? v * 1000 : v;
 }
 
 // ─── Harmonics UI ─────────────────────────────────────────────────────────────
 function renderHarmonicsList() {
   const list = document.getElementById('harmonics-list');
   list.innerHTML = '';
-  for (let i = 0; i < NUM_COMPONENTS; i++) {
+  for (let i = 0; i < NUM; i++) {
     const row = document.createElement('div');
     row.className = 'harmonic-row';
+    const displayVal = freqToDisplayVal(components[i].freq, rowUnit[i]);
     row.innerHTML = `
-      <span class="idx">${i + 1}</span>
-      <input type="number" id="freq-${i}" value="${components[i].freq || ''}"
-        placeholder="Hz" min="0" max="24000" step="0.1"
-        oninput="onFreqChange(${i}, this.value)"
-        class="${components[i].freq > 0 ? 'active-freq' : ''}"/>
+      <span class="idx">${i+1}</span>
+      <div class="freq-input-wrap">
+        <input type="text" id="freq-${i}"
+          value="${displayVal || ''}"
+          placeholder="${rowUnit[i] === 'khz' ? 'kHz' : 'Hz'}"
+          oninput="onFreqChange(${i}, this.value)"
+          class="${components[i].freq > 0 ? 'active-freq' : ''}"/>
+        <span class="freq-unit-toggle" id="unit-toggle-${i}" onclick="toggleRowUnit(${i})">${rowUnit[i] === 'khz' ? 'kHz' : 'Hz'}</span>
+      </div>
       <input type="range" id="amp-${i}" min="0" max="1" step="0.01"
         value="${components[i].amp}"
         oninput="onAmpChange(${i}, this.value)"/>
-      <span class="amp-val" id="ampval-${i}">${Math.round(components[i].amp * 100)}%</span>
+      <span class="amp-val" id="ampval-${i}">${Math.round(components[i].amp*100)}%</span>
     `;
     list.appendChild(row);
   }
 }
 
+function freqToDisplayVal(freqHz, unit) {
+  if (!freqHz || freqHz <= 0) return '';
+  return unit === 'khz'
+    ? parseFloat((freqHz / 1000).toFixed(5))
+    : parseFloat(freqHz.toFixed(2));
+}
+
+function toggleRowUnit(i) {
+  const inp = document.getElementById(`freq-${i}`);
+  const currentHz = components[i].freq;
+  rowUnit[i] = rowUnit[i] === 'hz' ? 'khz' : 'hz';
+  inp.placeholder = rowUnit[i] === 'khz' ? 'kHz' : 'Hz';
+  inp.value = freqToDisplayVal(currentHz, rowUnit[i]) || '';
+  document.getElementById(`unit-toggle-${i}`).textContent = rowUnit[i] === 'khz' ? 'kHz' : 'Hz';
+}
+
 function onFreqChange(i, val) {
-  const f = parseFloat(val);
-  components[i].freq = isNaN(f) || f <= 0 ? 0 : f;
-  const el = document.getElementById(`freq-${i}`);
-  el.classList.toggle('active-freq', components[i].freq > 0);
-  if (isPlaying) restartOscillators();
+  const v = parseFloat(val);
+  const hz = rowUnit[i] === 'khz' ? v * 1000 : v;
+  components[i].freq = (!isNaN(hz) && hz > 0) ? Math.min(hz, 24000) : 0;
+  document.getElementById(`freq-${i}`).classList.toggle('active-freq', components[i].freq > 0);
+  if (isPlaying && noiseType === 'off') restartOscillators();
   drawGeneratedGraphs();
 }
 
 function onAmpChange(i, val) {
   components[i].amp = parseFloat(val);
   document.getElementById(`ampval-${i}`).textContent = Math.round(components[i].amp * 100) + '%';
-  if (isPlaying) restartOscillators();
+  if (isPlaying && noiseType === 'off') restartOscillators();
   drawGeneratedGraphs();
 }
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
-function getFundamental() {
-  return Math.max(1, parseFloat(document.getElementById('fundamental').value) || 220);
-}
-
 function onFundamentalChange() {
-  const activePreset = document.querySelector('.preset-btn.active');
-  if (activePreset && activePreset.textContent !== 'Clear') {
-    applyPreset(activePreset.textContent.toLowerCase());
-  }
+  const active = document.querySelector('.preset-btn.active');
+  if (active && active.dataset.preset !== 'clear') applyPreset(active.dataset.preset);
 }
 
 function applyPreset(name) {
+  // Clear noise
+  if (name !== 'clear') applyNoise('off', true);
+
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  const btn = [...document.querySelectorAll('.preset-btn')].find(b => b.textContent.toLowerCase() === name);
-  if (btn) btn.classList.add('active');
+  const btn = document.querySelector(`.preset-btn[data-preset="${name}"]`);
+  if (btn) { btn.classList.add('active'); }
 
-  const f0 = getFundamental();
-
-  // Reset all
-  for (let i = 0; i < NUM_COMPONENTS; i++) {
-    components[i] = { freq: 0, amp: 0 };
-  }
+  const f0 = Math.max(1, getFundamentalHz());
+  for (let i = 0; i < NUM; i++) components[i] = {freq: 0, amp: 0};
 
   if (name === 'sine') {
-    components[0] = { freq: f0, amp: 1.0 };
+    components[0] = {freq: f0, amp: 1};
   } else if (name === 'square') {
-    // Odd harmonics: 1/n
-    let slot = 0;
-    for (let n = 1; n <= 63 && slot < NUM_COMPONENTS; n += 2) {
-      components[slot++] = { freq: f0 * n, amp: 1 / n };
+    let s = 0;
+    for (let n = 1; n <= 63 && s < NUM; n += 2) {
+      const f = f0 * n; if (f > 24000) break;
+      components[s++] = {freq: f, amp: 1/n};
     }
   } else if (name === 'sawtooth') {
-    // All harmonics: 1/n
-    for (let n = 1; n <= NUM_COMPONENTS; n++) {
-      components[n - 1] = { freq: f0 * n, amp: 1 / n };
+    for (let n = 1; n <= NUM; n++) {
+      const f = f0 * n; if (f > 24000) break;
+      components[n-1] = {freq: f, amp: 1/n};
     }
   } else if (name === 'triangle') {
-    // Odd harmonics: 1/n²  alternating sign (use positive amp, phase isn't modelled)
-    let slot = 0;
-    for (let n = 1; n <= 63 && slot < NUM_COMPONENTS; n += 2) {
-      components[slot++] = { freq: f0 * n, amp: 1 / (n * n) };
+    let s = 0;
+    for (let n = 1; n <= 63 && s < NUM; n += 2) {
+      const f = f0 * n; if (f > 24000) break;
+      components[s++] = {freq: f, amp: 1/(n*n)};
     }
-  } else if (name === 'clear') {
-    // already cleared
   }
+  // 'clear' leaves everything zero
 
   renderHarmonicsList();
   if (isPlaying) restartOscillators();
   drawGeneratedGraphs();
 }
 
+// Set data-preset attr on buttons after DOM ready
+document.querySelectorAll && (function() {
+  const names = ['sine','square','sawtooth','triangle','clear'];
+  document.querySelectorAll('.preset-btn').forEach((b, i) => b.dataset.preset = names[i]);
+})();
+
+// ─── Noise ────────────────────────────────────────────────────────────────────
+function applyNoise(type, silent) {
+  noiseType = type;
+  document.querySelectorAll('.noise-btn').forEach(b => b.classList.remove('active'));
+  if (type !== 'off') {
+    document.getElementById(`noise-${type}-btn`).classList.add('active');
+  } else {
+    document.getElementById('noise-off-btn').classList.add('active');
+  }
+
+  const lbl = document.getElementById('noise-label');
+  if (type !== 'off') {
+    lbl.textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' Noise';
+    lbl.style.display = 'inline-block';
+  } else {
+    lbl.style.display = 'none';
+  }
+
+  if (!silent && isPlaying) restartOscillators();
+  if (!silent) drawGeneratedGraphs();
+}
+
 // ─── Audio context ────────────────────────────────────────────────────────────
-function ensureAudioContext() {
+function ensureAudioCtx() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = audioCtx.createGain();
     masterGain.gain.value = parseFloat(document.getElementById('volume').value);
-
     analyserNode = audioCtx.createAnalyser();
-    analyserNode.fftSize = 4096;
-    analyserNode.smoothingTimeConstant = 0.7;
-
+    analyserNode.fftSize = 8192;
+    analyserNode.smoothingTimeConstant = 0.75;
     masterGain.connect(analyserNode);
     analyserNode.connect(audioCtx.destination);
   }
@@ -518,42 +502,40 @@ function ensureAudioContext() {
 
 function onVolumeChange() {
   const v = parseFloat(document.getElementById('volume').value);
-  document.getElementById('vol-label').textContent = Math.round(v * 100) + '%';
+  document.getElementById('vol-label').textContent = Math.round(v*100) + '%';
   if (masterGain) masterGain.gain.value = v;
 }
 
-// ─── Playback ─────────────────────────────────────────────────────────────────
+// ─── Play / Stop ──────────────────────────────────────────────────────────────
 function togglePlay() {
-  if (isPlaying) stopPlay();
-  else startPlay();
+  isPlaying ? stopPlay() : startPlay();
 }
 
 function startPlay() {
-  ensureAudioContext();
+  ensureAudioCtx();
   stopOscillators();
 
-  const active = components.filter(c => c.freq > 0 && c.amp > 0);
-  if (active.length === 0) return;
-
-  // Normalise so peaks don't clip
-  const totalAmp = active.reduce((s, c) => s + c.amp, 0);
-  const scale = totalAmp > 0 ? 1 / totalAmp : 1;
-
-  active.forEach(c => {
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = c.freq;
-    g.gain.value = c.amp * scale;
-    osc.connect(g);
-    g.connect(masterGain);
-    osc.start();
-    oscillators.push({ osc, g });
-  });
+  if (noiseType !== 'off') {
+    startNoise(noiseType);
+  } else {
+    const active = components.filter(c => c.freq > 0 && c.amp > 0);
+    if (!active.length) return;
+    const totalAmp = active.reduce((s,c) => s + c.amp, 0) || 1;
+    active.forEach(c => {
+      const osc = audioCtx.createOscillator();
+      const g   = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = c.freq;
+      g.gain.value = c.amp / totalAmp;
+      osc.connect(g); g.connect(masterGain);
+      osc.start();
+      oscillators.push({osc, g});
+    });
+  }
 
   isPlaying = true;
   document.getElementById('play-btn').textContent = '⏸ Pause';
-  startLiveAnalysis();
+  startLiveLoop();
 }
 
 function stopPlay() {
@@ -565,19 +547,53 @@ function stopPlay() {
 }
 
 function stopOscillators() {
-  oscillators.forEach(({ osc }) => { try { osc.stop(); } catch(e) {} });
+  oscillators.forEach(({osc}) => { try { osc.stop(); } catch(e){} });
   oscillators = [];
+  if (noiseSource) { try { noiseSource.stop(); } catch(e){} noiseSource = null; }
 }
 
 function restartOscillators() {
-  if (isPlaying) {
-    stopOscillators();
-    startPlay();
+  if (isPlaying) { stopOscillators(); startPlay(); }
+}
+
+// ─── Noise generators ─────────────────────────────────────────────────────────
+function startNoise(type) {
+  const SR = audioCtx.sampleRate;
+  const bufLen = SR * 2; // 2-second looping buffer
+  const buf = audioCtx.createBuffer(1, bufLen, SR);
+  const data = buf.getChannelData(0);
+
+  if (type === 'white') {
+    for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+  } else if (type === 'pink') {
+    // Paul Kellet's pink noise algorithm
+    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+    for (let i = 0; i < bufLen; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99886*b0 + w*0.0555179; b1 = 0.99332*b1 + w*0.0750759;
+      b2 = 0.96900*b2 + w*0.1538520; b3 = 0.86650*b3 + w*0.3104856;
+      b4 = 0.55000*b4 + w*0.5329522; b5 = -0.7616*b5 - w*0.0168980;
+      data[i] = (b0+b1+b2+b3+b4+b5+b6+w*0.5362) * 0.11;
+      b6 = w * 0.115926;
+    }
+  } else if (type === 'brown') {
+    let last = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      data[i] = last * 3.5;
+    }
   }
+
+  noiseSource = audioCtx.createBufferSource();
+  noiseSource.buffer = buf;
+  noiseSource.loop = true;
+  noiseSource.connect(masterGain);
+  noiseSource.start();
 }
 
 // ─── Live analysis loop ───────────────────────────────────────────────────────
-function startLiveAnalysis() {
+function startLiveLoop() {
   function loop() {
     if (!isPlaying) return;
     drawLiveTime();
@@ -587,129 +603,129 @@ function startLiveAnalysis() {
   animFrame = requestAnimationFrame(loop);
 }
 
-// ─── Generated graphs (static, computed) ─────────────────────────────────────
+// ─── Static generated graphs ─────────────────────────────────────────────────
 function drawGeneratedGraphs() {
-  if (isPlaying) return; // live analysis handles it while playing
-  drawStaticTime();
-  drawStaticFreq();
-}
-
-function getActiveComponents() {
-  return components.filter(c => c.freq > 0 && c.amp > 0);
+  if (isPlaying) return;
+  if (noiseType !== 'off') {
+    drawNoiseTimeGraph();
+    drawNoiseFreqGraph();
+  } else {
+    drawStaticTime();
+    drawStaticFreq();
+  }
 }
 
 function drawStaticTime() {
   const canvas = document.getElementById('canvas-time');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
   drawGrid(ctx, W, H);
 
-  const active = getActiveComponents();
-  if (active.length === 0) {
-    drawNoData(ctx, W, H, 'Add frequencies above');
-    return;
-  }
+  const active = components.filter(c => c.freq > 0 && c.amp > 0);
+  if (!active.length) { drawNoDataText(ctx, W, H, 'Add frequencies above'); return; }
 
-  const totalAmp = active.reduce((s, c) => s + c.amp, 0) || 1;
-  // Show ~3 cycles of the lowest frequency
+  const totalAmp = active.reduce((s,c) => s + c.amp, 0) || 1;
   const minFreq = Math.min(...active.map(c => c.freq));
-  const duration = Math.min(3 / minFreq, 0.1); // cap at 100ms
-  const sampleRate = 44100;
-  const numSamples = Math.ceil(duration * sampleRate);
+  const duration = Math.min(3 / minFreq, 0.05);
 
-  ctx.beginPath();
-  ctx.strokeStyle = '#6c8aff';
-  ctx.lineWidth = 1.5;
-
+  ctx.beginPath(); ctx.strokeStyle = '#6c8aff'; ctx.lineWidth = 1.5;
   for (let i = 0; i < W; i++) {
-    const t = (i / W) * duration;
+    const t = (i/W) * duration;
     let y = 0;
-    active.forEach(c => { y += (c.amp / totalAmp) * Math.sin(2 * Math.PI * c.freq * t); });
-    const cy = H / 2 - (y * H * 0.42);
+    active.forEach(c => y += (c.amp/totalAmp) * Math.sin(2*Math.PI*c.freq*t));
+    const cy = H/2 - y*H*0.42;
     i === 0 ? ctx.moveTo(i, cy) : ctx.lineTo(i, cy);
   }
   ctx.stroke();
-
-  drawAxisLabels(ctx, W, H, `0`, `${(duration * 1000).toFixed(1)} ms`);
+  drawAxisLabels(ctx, W, H, '0', `${(duration*1000).toFixed(2)} ms`);
 }
 
 function drawStaticFreq() {
   const canvas = document.getElementById('canvas-freq');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
   drawGrid(ctx, W, H);
 
-  const active = getActiveComponents();
-  if (active.length === 0) {
-    drawNoData(ctx, W, H, 'Add frequencies above');
-    return;
-  }
+  const active = components.filter(c => c.freq > 0 && c.amp > 0);
+  if (!active.length) { drawNoDataText(ctx, W, H, 'Add frequencies above'); return; }
 
-  const maxFreq = Math.max(...active.map(c => c.freq)) * 1.3;
-  const maxAmp = Math.max(...active.map(c => c.amp));
-  const padX = 40, padTop = 10, padBot = 24;
+  const maxFreq = Math.max(...active.map(c => c.freq)) * 1.25;
+  const maxAmp  = Math.max(...active.map(c => c.amp));
+  const padX = 40, padBot = 22, padTop = 10;
 
   active.forEach(c => {
-    const x = padX + ((c.freq / maxFreq) * (W - padX - 10));
-    const barH = ((c.amp / maxAmp) * (H - padTop - padBot));
+    const x = padX + (c.freq/maxFreq)*(W-padX-10);
+    const barH = (c.amp/maxAmp)*(H-padTop-padBot);
     const y = H - padBot - barH;
-
-    // Gradient bar
-    const grad = ctx.createLinearGradient(0, y, 0, H - padBot);
-    grad.addColorStop(0, '#6c8aff');
-    grad.addColorStop(1, 'rgba(108,138,255,0.2)');
+    const grad = ctx.createLinearGradient(0, y, 0, H-padBot);
+    grad.addColorStop(0, '#6c8aff'); grad.addColorStop(1, 'rgba(108,138,255,0.15)');
     ctx.fillStyle = grad;
-    ctx.fillRect(x - 2, y, 4, barH);
-
-    // Freq label
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '9px Segoe UI, sans-serif';
-    ctx.textAlign = 'center';
-    const label = c.freq >= 1000 ? `${(c.freq/1000).toFixed(1)}k` : `${Math.round(c.freq)}`;
-    ctx.fillText(label, x, H - 6);
+    ctx.fillRect(x-2, y, 4, barH);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '9px Segoe UI'; ctx.textAlign = 'center';
+    const lbl = c.freq >= 1000 ? `${(c.freq/1000).toFixed(1)}k` : `${Math.round(c.freq)}`;
+    ctx.fillText(lbl, x, H-5);
   });
 
-  // X axis line
-  ctx.strokeStyle = '#2e3250';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padX, H - padBot);
-  ctx.lineTo(W, H - padBot);
-  ctx.stroke();
-
-  drawAxisLabels(ctx, W, H, '0 Hz', `${maxFreq >= 1000 ? (maxFreq/1000).toFixed(1)+'k' : Math.round(maxFreq)} Hz`);
+  ctx.strokeStyle = '#2e3250'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padX, H-padBot); ctx.lineTo(W, H-padBot); ctx.stroke();
+  drawAxisLabels(ctx, W, H, '0 Hz', fmtFreq(maxFreq));
 }
 
-// ─── Live (Web Audio Analyser) ────────────────────────────────────────────────
+function drawNoiseTimeGraph() {
+  const canvas = document.getElementById('canvas-time');
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
+  drawGrid(ctx, W, H);
+  // Draw a fake representative snippet
+  ctx.beginPath(); ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1;
+  for (let i = 0; i < W; i++) {
+    const y = H/2 + (Math.random()*2-1)*H*0.42;
+    i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
+  }
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(251,191,36,0.12)';
+  ctx.font = '11px Segoe UI'; ctx.textAlign = 'center'; ctx.fillStyle = '#fbbf24';
+  ctx.fillText(`${noiseType.charAt(0).toUpperCase()+noiseType.slice(1)} Noise — press Play to see live waveform`, W/2, 18);
+}
+
+function drawNoiseFreqGraph() {
+  const canvas = document.getElementById('canvas-freq');
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
+  drawGrid(ctx, W, H);
+  // Draw representative idealised spectrum shape
+  const padBot = 22;
+  for (let i = 0; i < W; i++) {
+    const f = (i/W); // 0..1 normalised frequency
+    let amp;
+    if (noiseType === 'white')  amp = 0.85 + (Math.random()-0.5)*0.1;
+    else if (noiseType === 'pink')  amp = (1 - f*0.7) * (0.85 + (Math.random()-0.5)*0.1);
+    else amp = Math.pow(1-f, 2) * (0.9 + (Math.random()-0.5)*0.05); // brown
+    const barH = amp*(H-padBot-10);
+    ctx.fillStyle = noiseType === 'white' ? 'rgba(200,210,255,0.5)'
+                  : noiseType === 'pink'  ? 'rgba(251,150,200,0.5)'
+                  : 'rgba(180,120,80,0.5)';
+    ctx.fillRect(i, H-padBot-barH, 1, barH);
+  }
+  ctx.strokeStyle = '#2e3250'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, H-padBot); ctx.lineTo(W, H-padBot); ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '10px Segoe UI'; ctx.textAlign = 'left';
+  ctx.fillText('0 Hz', 4, H-5);
+  ctx.textAlign = 'right';
+  ctx.fillText('24 kHz', W-4, H-5);
+}
+
+// ─── Live graphs (Web Audio Analyser) ────────────────────────────────────────
 function drawLiveTime() {
   const canvas = document.getElementById('canvas-time');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const bufLen = analyserNode.fftSize;
-  const data = new Float32Array(bufLen);
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
+  const data = new Float32Array(analyserNode.fftSize);
   analyserNode.getFloatTimeDomainData(data);
-
   drawGrid(ctx, W, H);
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#34d399';
-  ctx.lineWidth = 1.5;
-
+  ctx.beginPath(); ctx.strokeStyle = '#34d399'; ctx.lineWidth = 1.5;
   for (let i = 0; i < W; i++) {
-    const idx = Math.floor((i / W) * bufLen);
-    const cy = H / 2 - data[idx] * H * 0.42;
+    const cy = H/2 - data[Math.floor(i/W*data.length)] * H*0.42;
     i === 0 ? ctx.moveTo(i, cy) : ctx.lineTo(i, cy);
   }
   ctx.stroke();
@@ -717,44 +733,34 @@ function drawLiveTime() {
 
 function drawLiveFreq() {
   const canvas = document.getElementById('canvas-freq');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
   const bufLen = analyserNode.frequencyBinCount;
   const data = new Uint8Array(bufLen);
   analyserNode.getByteFrequencyData(data);
-
   drawGrid(ctx, W, H);
-
-  const padX = 4, padBot = 4;
-  const barW = Math.max(1, (W - padX) / bufLen);
-
+  const barW = Math.max(1, W/bufLen);
   for (let i = 0; i < bufLen; i++) {
-    const barH = ((data[i] / 255) * (H - padBot));
-    const x = padX + i * barW;
-    const y = H - padBot - barH;
-    const hue = 200 + (data[i] / 255) * 60;
-    ctx.fillStyle = `hsl(${hue}, 80%, 60%)`;
-    ctx.fillRect(x, y, Math.max(1, barW - 1), barH);
+    const barH = (data[i]/255) * (H-4);
+    const hue = 200 + (data[i]/255)*60;
+    ctx.fillStyle = `hsl(${hue},80%,60%)`;
+    ctx.fillRect(i*barW, H-4-barH, Math.max(1,barW-1), barH);
   }
 }
 
 // ─── Recording ────────────────────────────────────────────────────────────────
 async function toggleRecord() {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    await startRecording();
-  }
+  isRecording ? stopRecording() : await startRecording();
 }
 
 async function startRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     recChunks = [];
+    recordedBlob = null;
+    document.getElementById('playback-btn').disabled = true;
+    document.getElementById('playback-stop-btn').disabled = true;
+
     mediaRecorder = new MediaRecorder(stream);
     mediaRecorder.ondataavailable = e => recChunks.push(e.data);
     mediaRecorder.onstop = processRecording;
@@ -764,19 +770,13 @@ async function startRecording() {
     document.getElementById('rec-btn').textContent = '⏹ Stop';
     document.getElementById('rec-btn').classList.add('recording');
 
-    const dur = parseInt(document.getElementById('rec-duration').value);
-    let remaining = dur;
-    document.getElementById('rec-status').textContent = `Recording… ${remaining}s remaining`;
+    let remaining = parseInt(document.getElementById('rec-duration').value);
+    document.getElementById('rec-status').textContent = `🔴 Recording… ${remaining}s remaining`;
     recCountdown = setInterval(() => {
       remaining--;
-      if (remaining <= 0) {
-        clearInterval(recCountdown);
-        stopRecording();
-      } else {
-        document.getElementById('rec-status').textContent = `Recording… ${remaining}s remaining`;
-      }
+      if (remaining <= 0) { clearInterval(recCountdown); stopRecording(); }
+      else document.getElementById('rec-status').textContent = `🔴 Recording… ${remaining}s remaining`;
     }, 1000);
-
   } catch(e) {
     document.getElementById('rec-status').textContent = '⚠️ Microphone access denied';
   }
@@ -793,167 +793,148 @@ function stopRecording() {
 }
 
 async function processRecording() {
-  const blob = new Blob(recChunks, { type: 'audio/webm' });
-  const arrayBuffer = await blob.arrayBuffer();
-
+  recordedBlob = new Blob(recChunks, {type: 'audio/webm'});
+  const arrayBuf = await recordedBlob.arrayBuffer();
   const tmpCtx = new (window.AudioContext || window.webkitAudioContext)();
-  let audioBuffer;
-  try {
-    audioBuffer = await tmpCtx.decodeAudioData(arrayBuffer);
-  } catch(e) {
-    document.getElementById('rec-status').textContent = '⚠️ Could not decode audio';
-    return;
-  }
+  let audioBuf;
+  try { audioBuf = await tmpCtx.decodeAudioData(arrayBuf); }
+  catch(e) { document.getElementById('rec-status').textContent = '⚠️ Could not decode audio'; return; }
 
-  const rawData = audioBuffer.getChannelData(0);
+  const rawData = audioBuf.getChannelData(0);
   document.getElementById('rec-status').textContent =
-    `Recorded ${audioBuffer.duration.toFixed(2)}s at ${audioBuffer.sampleRate} Hz`;
-
+    `✅ Recorded ${audioBuf.duration.toFixed(2)}s at ${audioBuf.sampleRate} Hz — ready to play`;
   document.getElementById('no-rec-time').style.display = 'none';
   document.getElementById('no-rec-freq').style.display = 'none';
+  document.getElementById('playback-btn').disabled = false;
 
-  drawRecordedTime(rawData, audioBuffer.sampleRate);
-  drawRecordedFreq(rawData, audioBuffer.sampleRate);
+  drawRecordedTime(rawData, audioBuf.sampleRate);
+  drawRecordedFreq(rawData, audioBuf.sampleRate);
 }
 
+// ─── Recorded playback ────────────────────────────────────────────────────────
+function playbackRecording() {
+  if (!recordedBlob) return;
+  stopPlayback();
+  const url = URL.createObjectURL(recordedBlob);
+  playbackAudioEl = new Audio(url);
+  playbackAudioEl.onended = () => {
+    isPlayingBack = false;
+    document.getElementById('playback-btn').textContent = '▶ Play Recording';
+    document.getElementById('playback-stop-btn').disabled = true;
+  };
+  playbackAudioEl.play();
+  isPlayingBack = true;
+  document.getElementById('playback-btn').textContent = '⏸ Playing…';
+  document.getElementById('playback-stop-btn').disabled = false;
+}
+
+function stopPlayback() {
+  if (playbackAudioEl) { playbackAudioEl.pause(); playbackAudioEl.currentTime = 0; playbackAudioEl = null; }
+  isPlayingBack = false;
+  document.getElementById('playback-btn').textContent = '▶ Play Recording';
+  document.getElementById('playback-stop-btn').disabled = true;
+}
+
+// ─── Recorded graphs ──────────────────────────────────────────────────────────
 function drawRecordedTime(data, sampleRate) {
   const canvas = document.getElementById('canvas-rec-time');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
   drawGrid(ctx, W, H);
-
-  ctx.beginPath();
-  ctx.strokeStyle = '#f87171';
-  ctx.lineWidth = 1.2;
-
+  ctx.beginPath(); ctx.strokeStyle = '#f87171'; ctx.lineWidth = 1.2;
   for (let i = 0; i < W; i++) {
-    const idx = Math.floor((i / W) * data.length);
-    const cy = H / 2 - data[idx] * H * 0.42;
+    const cy = H/2 - data[Math.floor(i/W*data.length)] * H*0.42;
     i === 0 ? ctx.moveTo(i, cy) : ctx.lineTo(i, cy);
   }
   ctx.stroke();
-
-  const dur = data.length / sampleRate;
-  drawAxisLabels(ctx, W, H, '0', `${dur.toFixed(2)}s`);
+  drawAxisLabels(ctx, W, H, '0', `${(data.length/sampleRate).toFixed(2)}s`);
 }
 
 function drawRecordedFreq(data, sampleRate) {
   const canvas = document.getElementById('canvas-rec-freq');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
   drawGrid(ctx, W, H);
 
-  // FFT via Web Audio offline
-  const fftSize = Math.pow(2, Math.ceil(Math.log2(Math.min(data.length, 32768))));
-  const offlineCtx = new OfflineAudioContext(1, data.length, sampleRate);
-  const src = offlineCtx.createBufferSource();
-  const buf = offlineCtx.createBuffer(1, data.length, sampleRate);
+  const fftSize = Math.min(Math.pow(2, Math.ceil(Math.log2(data.length))), 32768);
+  const offCtx = new OfflineAudioContext(1, data.length, sampleRate);
+  const src = offCtx.createBufferSource();
+  const buf = offCtx.createBuffer(1, data.length, sampleRate);
   buf.copyToChannel(data, 0);
   src.buffer = buf;
-
-  const analyser = offlineCtx.createAnalyser();
-  analyser.fftSize = Math.min(fftSize, 32768);
+  const analyser = offCtx.createAnalyser();
+  analyser.fftSize = fftSize;
   analyser.smoothingTimeConstant = 0;
-  src.connect(analyser);
-  analyser.connect(offlineCtx.destination);
+  src.connect(analyser); analyser.connect(offCtx.destination);
   src.start(0);
 
-  offlineCtx.startRendering().then(() => {
+  offCtx.startRendering().then(() => {
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(freqData);
+    const padBot = 22;
+    const maxDisplayFreq = Math.min(sampleRate/2, 20000);
+    const maxBin = Math.floor((maxDisplayFreq/(sampleRate/2))*freqData.length);
+    const display = freqData.slice(0, maxBin);
+    const bw = W / display.length;
 
-    const padBot = 20;
-    // Only show up to Nyquist (~20kHz capped)
-    const maxDisplayFreq = Math.min(sampleRate / 2, 20000);
-    const maxBin = Math.floor((maxDisplayFreq / (sampleRate / 2)) * freqData.length);
-    const displayData = freqData.slice(0, maxBin);
-
-    const barW = W / displayData.length;
-
-    displayData.forEach((val, i) => {
-      const barH = ((val / 255) * (H - padBot));
-      const x = i * barW;
-      const y = H - padBot - barH;
-      const hue = 0 + (val / 255) * 30;
-      ctx.fillStyle = `hsl(${hue}, 85%, 65%)`;
-      ctx.fillRect(x, y, Math.max(1, barW - 0.5), barH);
+    display.forEach((val, i) => {
+      const barH = (val/255)*(H-padBot);
+      const hue = (val/255)*30;
+      ctx.fillStyle = `hsl(${hue},85%,65%)`;
+      ctx.fillRect(i*bw, H-padBot-barH, Math.max(1,bw-0.5), barH);
     });
 
-    // Frequency axis labels
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px Segoe UI, sans-serif';
-    ctx.textAlign = 'center';
-    [0, 1000, 2000, 4000, 8000, 16000].forEach(freq => {
-      if (freq > maxDisplayFreq) return;
-      const x = (freq / maxDisplayFreq) * W;
-      ctx.fillText(freq >= 1000 ? `${freq/1000}k` : freq, x, H - 4);
+    ctx.strokeStyle = '#2e3250'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H-padBot); ctx.lineTo(W, H-padBot); ctx.stroke();
+    ctx.fillStyle = '#64748b'; ctx.font = '10px Segoe UI'; ctx.textAlign = 'center';
+    [0,1000,2000,4000,8000,12000,16000,20000].forEach(f => {
+      if (f > maxDisplayFreq) return;
+      const x = (f/maxDisplayFreq)*W;
+      ctx.fillText(f>=1000 ? `${f/1000}k` : f, x, H-5);
     });
-
-    // X axis
-    ctx.strokeStyle = '#2e3250';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, H - padBot);
-    ctx.lineTo(W, H - padBot);
-    ctx.stroke();
   });
 }
 
-// ─── Drawing helpers ──────────────────────────────────────────────────────────
+// ─── Canvas helpers ───────────────────────────────────────────────────────────
+function setupCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return ctx;
+}
+function dims(canvas) { return { W: canvas.clientWidth, H: canvas.clientHeight }; }
+
 function drawGrid(ctx, W, H) {
   ctx.clearRect(0, 0, W, H);
-  ctx.strokeStyle = '#1e2235';
-  ctx.lineWidth = 1;
-
-  // Horizontal lines
-  for (let i = 1; i < 4; i++) {
-    const y = (H / 4) * i;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  }
-  // Vertical lines
-  for (let i = 1; i < 6; i++) {
-    const x = (W / 6) * i;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-  }
-
-  // Centre line
-  ctx.strokeStyle = '#2a2f4a';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+  ctx.strokeStyle = '#1e2235'; ctx.lineWidth = 1;
+  for (let i=1;i<4;i++) { ctx.beginPath(); ctx.moveTo(0,(H/4)*i); ctx.lineTo(W,(H/4)*i); ctx.stroke(); }
+  for (let i=1;i<6;i++) { ctx.beginPath(); ctx.moveTo((W/6)*i,0); ctx.lineTo((W/6)*i,H); ctx.stroke(); }
+  ctx.strokeStyle = '#2a2f4a'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
 }
 
-function drawNoData(ctx, W, H, msg) {
-  ctx.fillStyle = '#2e3250';
-  ctx.font = '13px Segoe UI, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(msg, W / 2, H / 2 + 5);
+function drawNoDataText(ctx, W, H, msg) {
+  ctx.fillStyle = '#2e3250'; ctx.font = '13px Segoe UI'; ctx.textAlign = 'center';
+  ctx.fillText(msg, W/2, H/2+5);
 }
 
 function drawAxisLabels(ctx, W, H, left, right) {
-  ctx.fillStyle = '#475569';
-  ctx.font = '10px Segoe UI, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(left, 4, H - 4);
-  ctx.textAlign = 'right';
-  ctx.fillText(right, W - 4, H - 4);
+  ctx.fillStyle = '#475569'; ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'left';  ctx.fillText(left,  4,    H-4);
+  ctx.textAlign = 'right'; ctx.fillText(right, W-4,  H-4);
 }
 
-// ─── Resize handler ───────────────────────────────────────────────────────────
-window.addEventListener('resize', () => {
-  if (!isPlaying) drawGeneratedGraphs();
-});
+function fmtFreq(hz) {
+  return hz >= 1000 ? `${(hz/1000).toFixed(1)} kHz` : `${Math.round(hz)} Hz`;
+}
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
+// ─── Resize ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => { if (!isPlaying) drawGeneratedGraphs(); });
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 init();
-applyPreset('sine');
 </script>
 </body>
 </html>
