@@ -189,7 +189,7 @@
         </div>
       </div>
 
-      <!-- Single-frequency slider -->
+      <!-- Single-frequency slider + unified playback -->
       <div class="card">
         <h2>Single Frequency Slider</h2>
         <div class="freq-slider-wrap">
@@ -203,35 +203,28 @@
               <button class="unit-btn"        id="slider-unit-khz" onclick="setSliderUnit('khz')">kHz</button>
             </div>
           </div>
-          <!-- Log-scale slider: 1–32000 Hz mapped 0–1000 -->
           <input type="range" id="single-freq-range" min="0" max="1000" step="1" value="379" oninput="onSingleFreqSlider(this.value)"/>
           <div style="display:flex;justify-content:space-between;margin-top:4px;">
             <span style="font-size:.72rem;color:var(--muted);">1 Hz</span>
             <span style="font-size:.72rem;color:var(--muted);">32 kHz</span>
           </div>
         </div>
-        <div class="vol-row" style="margin-top:14px;">
+
+        <!-- Source selector -->
+        <div class="flex-row" style="margin-top:14px;margin-bottom:10px;gap:6px;">
+          <label class="small">Play:</label>
+          <button class="unit-btn active" id="src-slider-btn" onclick="setP1Source('slider')">Slider tone</button>
+          <button class="unit-btn"        id="src-preset-btn" onclick="setP1Source('preset')">Preset / Noise</button>
+        </div>
+
+        <div class="vol-row" style="margin-bottom:12px;">
           <label class="small">Volume</label>
           <input type="range" id="p1-volume" min="0" max="1" step="0.01" value="0.5" oninput="onP1VolumeChange()"/>
           <span id="p1-vol-label">50%</span>
         </div>
-        <div class="flex-row" style="margin-top:12px;">
-          <button class="btn btn-primary" id="p1-play-btn" onclick="toggleP1()" style="flex:1;">▶ Play</button>
-          <button class="btn btn-stop"    onclick="stopP1()"                     style="flex:1;">■ Stop</button>
-        </div>
-      </div>
-
-      <!-- Playback (presets) -->
-      <div class="card">
-        <h2>Preset Playback</h2>
-        <div class="vol-row" style="margin-bottom:12px;">
-          <label class="small">Volume</label>
-          <input type="range" id="p1-preset-volume" min="0" max="1" step="0.01" value="0.5" oninput="onPresetVolumeChange()"/>
-          <span id="p1-preset-vol-label">50%</span>
-        </div>
         <div class="flex-row">
-          <button class="btn btn-primary" id="preset-play-btn" onclick="togglePresetPlay()" style="flex:1;">▶ Play</button>
-          <button class="btn btn-stop"    onclick="stopPresetPlay()"                         style="flex:1;">■ Stop</button>
+          <button class="btn btn-primary" id="p1-unified-play-btn" onclick="toggleP1Unified()" style="flex:1;">▶ Play</button>
+          <button class="btn btn-stop"    onclick="stopP1Unified()"                             style="flex:1;">■ Stop</button>
         </div>
       </div>
 
@@ -503,87 +496,100 @@ function updateSingleOscFreq() {
   if (p1SingleOsc) p1SingleOsc.frequency.setTargetAtTime(p1SliderHz, audioCtx.currentTime, 0.01);
 }
 
-/* Single freq play/stop */
+/* ── Unified Page-1 play controls ── */
+let p1Source = 'slider'; // 'slider' | 'preset'
+
+function setP1Source(src) {
+  p1Source = src;
+  document.getElementById('src-slider-btn').classList.toggle('active', src==='slider');
+  document.getElementById('src-preset-btn').classList.toggle('active', src==='preset');
+  // If currently playing, switch source live
+  if (p1SinglePlaying || p1PresetPlaying) { stopP1Unified(); startP1Unified(); }
+}
+
 function onP1VolumeChange() {
   const v = parseFloat(document.getElementById('p1-volume').value);
   document.getElementById('p1-vol-label').textContent = Math.round(v*100)+'%';
-  if (p1SingleGain) p1SingleGain.gain.value = v;
+  if (p1SingleGain)   p1SingleGain.gain.value = v;
+  if (p1PresetGain)   p1PresetGain.gain.value = v;
 }
-function toggleP1() { p1SinglePlaying ? stopP1() : startP1(); }
-function startP1() {
+
+function toggleP1Unified() {
+  (p1SinglePlaying || p1PresetPlaying) ? stopP1Unified() : startP1Unified();
+}
+
+function startP1Unified() {
   ensureAudioCtx();
-  stopP1();
-  p1SingleGain = audioCtx.createGain();
-  p1SingleGain.gain.value = parseFloat(document.getElementById('p1-volume').value);
-  p1SingleOsc  = audioCtx.createOscillator();
-  p1SingleOsc.type = 'sine';
-  p1SingleOsc.frequency.value = p1SliderHz;
-  p1SingleOsc.connect(p1SingleGain);
-  p1SingleGain.connect(audioCtx.destination);
-  p1SingleOsc.start();
-  p1SinglePlaying = true;
-  document.getElementById('p1-play-btn').textContent = '⏸ Pause';
+  stopP1Unified();
+  const vol = parseFloat(document.getElementById('p1-volume').value);
+
+  if (p1Source === 'slider') {
+    // ── Slider tone ──
+    p1SingleGain = audioCtx.createGain();
+    p1SingleGain.gain.value = vol;
+    p1SingleOsc  = audioCtx.createOscillator();
+    p1SingleOsc.type = 'sine';
+    p1SingleOsc.frequency.value = p1SliderHz;
+    p1SingleOsc.connect(p1SingleGain);
+    p1SingleGain.connect(audioCtx.destination);
+    p1SingleOsc.start();
+    p1SinglePlaying = true;
+  } else {
+    // ── Preset / noise ──
+    p1PresetGain     = audioCtx.createGain();
+    p1PresetGain.gain.value = vol;
+    p1PresetAnalyser = audioCtx.createAnalyser();
+    p1PresetAnalyser.fftSize = 8192;
+    p1PresetAnalyser.smoothingTimeConstant = 0.75;
+    p1PresetGain.connect(p1PresetAnalyser);
+    p1PresetAnalyser.connect(audioCtx.destination);
+
+    if (p1NoiseType !== 'off') {
+      startNoiseInto(p1NoiseType, p1PresetGain, nodes => p1PresetNoise=nodes);
+    } else {
+      const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
+      if (!active.length) { stopP1Unified(); return; }
+      const total = active.reduce((s,c)=>s+c.amp,0)||1;
+      active.forEach(c=>{
+        const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
+        osc.type='sine'; osc.frequency.value=c.freq; g.gain.value=c.amp/total;
+        osc.connect(g); g.connect(p1PresetGain); osc.start();
+        p1PresetOscs.push({osc,g});
+      });
+    }
+    p1PresetPlaying = true;
+    (function loop(){
+      if (!p1PresetPlaying) return;
+      drawLiveTime('p1-canvas-time', p1PresetAnalyser);
+      drawLiveFreq('p1-canvas-freq', p1PresetAnalyser);
+      p1PresetAnim = requestAnimationFrame(loop);
+    })();
+  }
+  document.getElementById('p1-unified-play-btn').textContent = '⏸ Pause';
 }
-function stopP1() {
+
+function stopP1Unified() {
+  // Stop slider osc
   if (p1SingleOsc) { try{p1SingleOsc.stop();}catch(e){} p1SingleOsc=null; }
   p1SinglePlaying = false;
-  document.getElementById('p1-play-btn').textContent = '▶ Play';
-}
-
-/* Preset play/stop */
-function onPresetVolumeChange() {
-  const v = parseFloat(document.getElementById('p1-preset-volume').value);
-  document.getElementById('p1-preset-vol-label').textContent = Math.round(v*100)+'%';
-  if (p1PresetGain) p1PresetGain.gain.value = v;
-}
-function togglePresetPlay() { p1PresetPlaying ? stopPresetPlay() : startPresetPlay(); }
-function startPresetPlay() {
-  ensureAudioCtx();
-  stopPresetPlayNodes();
-
-  p1PresetGain     = audioCtx.createGain();
-  p1PresetGain.gain.value = parseFloat(document.getElementById('p1-preset-volume').value);
-  p1PresetAnalyser = audioCtx.createAnalyser();
-  p1PresetAnalyser.fftSize = 8192;
-  p1PresetAnalyser.smoothingTimeConstant = 0.75;
-  p1PresetGain.connect(p1PresetAnalyser);
-  p1PresetAnalyser.connect(audioCtx.destination);
-
-  if (p1NoiseType !== 'off') {
-    startNoiseInto(p1NoiseType, p1PresetGain, nodes => p1PresetNoise=nodes);
-  } else {
-    const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
-    if (!active.length) return;
-    const total = active.reduce((s,c)=>s+c.amp,0)||1;
-    active.forEach(c=>{
-      const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
-      osc.type='sine'; osc.frequency.value=c.freq; g.gain.value=c.amp/total;
-      osc.connect(g); g.connect(p1PresetGain); osc.start();
-      p1PresetOscs.push({osc,g});
-    });
-  }
-
-  p1PresetPlaying = true;
-  document.getElementById('preset-play-btn').textContent = '⏸ Pause';
-  (function loop(){
-    if (!p1PresetPlaying) return;
-    drawLiveTime('p1-canvas-time', p1PresetAnalyser);
-    drawLiveFreq('p1-canvas-freq', p1PresetAnalyser);
-    p1PresetAnim = requestAnimationFrame(loop);
-  })();
-}
-function stopPresetPlay() {
-  stopPresetPlayNodes();
+  // Stop preset nodes
+  p1PresetOscs.forEach(({osc})=>{try{osc.stop();}catch(e){}});
+  p1PresetOscs=[];
+  if (p1PresetNoise) { try{p1PresetNoise.stop();}catch(e){} p1PresetNoise=null; }
   p1PresetPlaying = false;
   cancelAnimationFrame(p1PresetAnim);
-  document.getElementById('preset-play-btn').textContent = '▶ Play';
+  document.getElementById('p1-unified-play-btn').textContent = '▶ Play';
   drawP1Graphs();
 }
+
+// Keep these aliases so applyPreset/applyNoise still work
 function stopPresetPlayNodes() {
   p1PresetOscs.forEach(({osc})=>{try{osc.stop();}catch(e){}});
   p1PresetOscs=[];
   if (p1PresetNoise) { try{p1PresetNoise.stop();}catch(e){} p1PresetNoise=null; }
 }
+function stopPresetPlay() { stopP1Unified(); }
+function onPresetVolumeChange() { onP1VolumeChange(); }
 
 /* Presets */
 function applyPreset(name) {
@@ -600,7 +606,7 @@ function applyPreset(name) {
   else if (name==='sawtooth') { for(let n=1;n<=NUM;n++){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[n-1]={freq:f,amp:1/n}; } }
   else if (name==='triangle') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/(n*n)}; } }
 
-  if (p1PresetPlaying) { stopPresetPlayNodes(); startPresetPlay(); }
+  if (p1PresetPlaying || p1SinglePlaying) { stopP1Unified(); if(p1Source==='preset') startP1Unified(); }
   drawP1Graphs();
 }
 function applyNoise(type, silent) {
@@ -610,11 +616,11 @@ function applyNoise(type, silent) {
   const lbl = document.getElementById('p1-noise-label');
   lbl.style.display = type!=='off' ? 'inline-block' : 'none';
   if (type!=='off') lbl.textContent = type.charAt(0).toUpperCase()+type.slice(1)+' Noise';
-  if (!silent) { if (p1PresetPlaying) { stopPresetPlayNodes(); startPresetPlay(); } drawP1Graphs(); }
+  if (!silent) { if (p1PresetPlaying || p1SinglePlaying) { stopP1Unified(); if(p1Source==='preset') startP1Unified(); } drawP1Graphs(); }
 }
 
 function drawP1Graphs() {
-  if (p1PresetPlaying) return;
+  if (p1PresetPlaying || p1SinglePlaying) return;
   if (p1NoiseType!=='off') { drawNoiseTime('p1-canvas-time', p1NoiseType); drawNoiseFreq('p1-canvas-freq', p1NoiseType); }
   else { drawStaticTime('p1-canvas-time', p1Components); drawStaticFreq('p1-canvas-freq', p1Components); }
 }
@@ -1111,7 +1117,7 @@ function showTab(pageId) {
   const idx = ['page-presets','page-generator','page-recorder'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   // Redraw static graphs for the activated page
-  if (pageId==='page-presets' && !p1PresetPlaying) drawP1Graphs();
+  if (pageId==='page-presets' && !p1PresetPlaying && !p1SinglePlaying) drawP1Graphs();
   if (pageId==='page-generator' && !p2Playing) drawP2Graphs();
   if (pageId==='page-recorder' && recordedBuffer && !pbPlaying) {
     drawRecordedTime(recordedBuffer.getChannelData(0),recordedBuffer.sampleRate);
@@ -1123,7 +1129,7 @@ function showTab(pageId) {
 // BOOT
 // ════════════════════════════════════════════════════════
 window.addEventListener('resize', ()=>{
-  if (!p1PresetPlaying) drawP1Graphs();
+  if (!p1PresetPlaying && !p1SinglePlaying) drawP1Graphs();
   if (!p2Playing) drawP2Graphs();
 });
 
