@@ -165,12 +165,21 @@
         </div>
 
         <!-- Fundamental -->
-        <div class="flex-row" style="margin-bottom:12px;">
-          <label class="small">Fundamental:</label>
-          <input type="number" id="fundamental" value="220" min="0.001" max="32000" step="any" style="width:90px;" oninput="onFundamentalChange()"/>
-          <div class="flex-row" style="gap:4px;">
-            <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
-            <button class="unit-btn"        id="unit-khz" onclick="setFundUnit('khz')">kHz</button>
+        <div class="freq-slider-wrap" style="margin-bottom:16px;">
+          <div class="freq-slider-header">
+            <div>
+              <div class="freq-slider-val" id="fundamental-display">220.00 Hz</div>
+              <div class="freq-slider-sub" id="fundamental-note-display"></div>
+            </div>
+            <div class="flex-row" style="gap:4px;">
+              <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
+              <button class="unit-btn"        id="unit-khz" onclick="setFundUnit('khz')">kHz</button>
+            </div>
+          </div>
+          <input type="range" id="fundamental-slider" min="0" max="1000" step="1" value="402" style="width:100%;height:8px;" oninput="onFundamentalSliderChange()"/>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:.72rem;color:var(--muted);">10 Hz</span>
+            <span style="font-size:.72rem;color:var(--muted);">22 kHz</span>
           </div>
         </div>
 
@@ -389,9 +398,14 @@ function closestNote(hz) {
   return `${note}${oct}${cents===0?'':` ${cents>0?'+':''}${cents}¢`}`;
 }
 
-// Log-scale helpers (1 Hz – 32000 Hz mapped to 0–1000)
+// Log-scale helpers for single freq slider (1 Hz – 32 kHz)
 function sliderToHz(v) { return Math.pow(MAX_FREQ, v/1000); }
 function hzToSlider(hz) { return Math.round(1000*Math.log(hz)/Math.log(MAX_FREQ)); }
+
+// Log-scale helpers for fundamental slider (10 Hz – 22000 Hz)
+const MIN_FUND = 10, MAX_FUND = 22000;
+function fundSliderToHz(v) { return Math.pow(MAX_FUND/MIN_FUND, v/1000) * MIN_FUND; }
+function fundHzToSlider(hz) { return Math.round(1000*Math.log(hz/MIN_FUND)/Math.log(MAX_FUND/MIN_FUND)); }
 
 // ── Shared AudioContext ──
 let audioCtx = null;
@@ -431,6 +445,9 @@ function initP1() {
   p1SliderHz = 220;
   document.getElementById('single-freq-range').value = hzToSlider(220);
   updateSliderDisplay();
+  // Fundamental slider init
+  document.getElementById('fundamental-slider').value = fundHzToSlider(220);
+  updateFundamentalDisplay();
   // init components
   p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
   applyPreset('sine');
@@ -438,21 +455,42 @@ function initP1() {
 
 /* Fundamental unit */
 function setFundUnit(u) {
-  const inp = document.getElementById('fundamental');
-  const hz  = p1FundUnit==='khz' ? (parseFloat(inp.value)||0)*1000 : (parseFloat(inp.value)||0);
   p1FundUnit = u;
-  inp.value  = u==='khz' ? +((hz/1000).toFixed(5)) : +(hz.toFixed(2));
   document.getElementById('unit-hz').classList.toggle('active', u==='hz');
   document.getElementById('unit-khz').classList.toggle('active', u==='khz');
-  onFundamentalChange();
-}
-function getFundHz() {
-  const v = parseFloat(document.getElementById('fundamental').value)||0;
-  return p1FundUnit==='khz' ? v*1000 : v;
-}
-function onFundamentalChange() {
+  updateFundamentalDisplay();
   const active = document.querySelector('.preset-btn.active');
   if (active && active.dataset.preset && active.dataset.preset!=='clear') applyPreset(active.dataset.preset);
+}
+function getFundHz() {
+  const sliderVal = parseInt(document.getElementById('fundamental-slider').value);
+  return fundSliderToHz(sliderVal);
+}
+function onFundamentalSliderChange() {
+  updateFundamentalDisplay();
+  const active = document.querySelector('.preset-btn[data-preset].active');
+  const presetName = active ? active.dataset.preset : null;
+  if (presetName && presetName !== 'clear') {
+    const f0 = Math.max(MIN_FUND, getFundHz());
+    p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
+    if (presetName === 'sine') { p1Components[0]={freq:f0,amp:1}; }
+    else if (presetName === 'square') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/n}; } }
+    else if (presetName === 'sawtooth') { for(let n=1;n<=NUM;n++){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[n-1]={freq:f,amp:1/n}; } }
+    else if (presetName === 'triangle') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/(n*n)}; } }
+    
+    if (p1PresetPlaying) {
+      updatePresetOscFreqs();
+    } else {
+      drawP1Graphs();
+    }
+  }
+}
+function updateFundamentalDisplay() {
+  const sliderVal = parseInt(document.getElementById('fundamental-slider').value);
+  const hz = fundSliderToHz(sliderVal);
+  const disp = p1FundUnit==='khz' ? `${(hz/1000).toFixed(4)} kHz` : hz>=1000 ? `${(hz/1000).toFixed(3)} kHz` : `${hz.toFixed(2)} Hz`;
+  document.getElementById('fundamental-display').textContent = disp;
+  document.getElementById('fundamental-note-display').textContent = closestNote(hz);
 }
 
 /* Note picker */
@@ -467,10 +505,11 @@ function setFundamentalFromNote() {
   const note = document.getElementById('note-select').value;
   const oct  = document.getElementById('octave-select').value;
   if (!note) return;
-  const f = Math.min(noteToFreq(note, oct), MAX_FREQ);
-  const disp = p1FundUnit==='khz' ? +((f/1000).toFixed(5)) : +(f.toFixed(2));
-  document.getElementById('fundamental').value = disp;
-  onFundamentalChange();
+  const f = Math.max(MIN_FUND, Math.min(noteToFreq(note, oct), MAX_FUND));
+  document.getElementById('fundamental-slider').value = fundHzToSlider(f);
+  updateFundamentalDisplay();
+  const active = document.querySelector('.preset-btn.active');
+  if (active && active.dataset.preset && active.dataset.preset!=='clear') applyPreset(active.dataset.preset);
 }
 
 /* Single freq slider */
@@ -494,6 +533,19 @@ function updateSliderDisplay() {
 }
 function updateSingleOscFreq() {
   if (p1SingleOsc) p1SingleOsc.frequency.setTargetAtTime(p1SliderHz, audioCtx.currentTime, 0.01);
+}
+
+function updatePresetOscFreqs() {
+  if (!p1PresetPlaying || p1PresetNoise) return;
+  const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
+  if (!active.length) return;
+  const total = active.reduce((s,c)=>s+c.amp,0)||1;
+  p1PresetOscs.forEach((item, i) => {
+    if (i < active.length) {
+      item.osc.frequency.setTargetAtTime(active[i].freq, audioCtx.currentTime, 0.01);
+      item.g.gain.setTargetAtTime(active[i].amp/total, audioCtx.currentTime, 0.01);
+    }
+  });
 }
 
 /* ── Unified Page-1 play controls ── */
