@@ -219,7 +219,6 @@
         </div>
         <div class="flex-row">
           <button class="btn btn-primary" id="p1-unified-play-btn" onclick="toggleP1Unified()" style="flex:1;">▶ Play</button>
-          <button class="btn btn-stop"    onclick="stopP1Unified()"                             style="flex:1;">■ Stop</button>
         </div>
       </div>
 
@@ -328,8 +327,7 @@
           <span id="rec-vol-label">80%</span>
         </div>
         <div class="flex-row" style="margin-bottom:10px;align-items:center;">
-          <button class="btn btn-green" id="pb-btn"      onclick="togglePlayback()" disabled style="flex:1;">▶ Play Recording</button>
-          <button class="btn btn-stop"  id="pb-stop-btn" onclick="stopPlayback()"   disabled style="flex:1;">■ Stop</button>
+          <button class="btn btn-green" id="pb-btn" onclick="togglePlayback()" disabled style="flex:1;">▶ Play Recording</button>
         </div>
         <div class="flex-row" style="margin-bottom:10px;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -802,7 +800,6 @@ async function startRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     recChunks=[]; recordedBlob=null; recordedBuffer=null;
     document.getElementById('pb-btn').disabled=true;
-    document.getElementById('pb-stop-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
 
     const recCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -903,8 +900,7 @@ function startPlayback() {
   if (pbLooping) pbLoopStartTime = pbAudioCtx.currentTime;
   pbSource.start(0);
   pbPlaying   = true;
-  document.getElementById('pb-btn').textContent='⏸ Playing…';
-  document.getElementById('pb-stop-btn').disabled=false;
+  document.getElementById('pb-btn').textContent='■ Stop';
 
   const dur = recordedBuffer.duration;
   (function loop(){
@@ -935,7 +931,6 @@ function stopPlayback() {
   if (pbSource) { try{pbSource.stop();}catch(e){} pbSource=null; }
   pbPlaying=false;
   document.getElementById('pb-btn').textContent='▶ Play Recording';
-  document.getElementById('pb-stop-btn').disabled=true;
   document.getElementById('pb-progress').style.width='0%';
   document.getElementById('pb-time-cur').textContent='0.00s';
   // Restore static graphs
