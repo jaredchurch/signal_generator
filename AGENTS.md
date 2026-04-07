@@ -9,6 +9,10 @@ Single-file web app (`index.html`) — no build system, tests, or CI.
 - All logic is embedded in the file — HTML, CSS, and JS in one document
 - No external dependencies or CDN resources
 
+## Coding Standards
+- Always add comments to code explaining what it does
+- Comments should be clear and helpful for future maintainers
+
 ## GitHub Codespace
 - Port 3000 is auto-forwarded and opens preview
 - Server auto-starts via `postStartCommand` in devcontainer.json
