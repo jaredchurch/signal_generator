@@ -67,6 +67,7 @@
     }
     input[type="number"]:focus, input[type="text"]:focus, select.styled:focus { outline: none; border-color: var(--accent); }
     input[type="range"] { accent-color: var(--accent); cursor: pointer; }
+    input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width:16px; height:16px; }
 
     .unit-btn { padding:4px 10px; border:1.5px solid var(--border); border-radius:6px; background:var(--card2); color:var(--muted); font-size:.75rem; font-weight:600; cursor:pointer; }
     .unit-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(108,138,255,.1); }
@@ -109,6 +110,8 @@
     .tag { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; }
     .tag-gen { background:rgba(108,138,255,.2); color:var(--accent); }
     .tag-rec { background:rgba(248,113,113,.2); color:var(--red); }
+    .tag-live { background:rgba(34,197,94,.2); color:var(--green); animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
     .no-data { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.82rem; pointer-events:none; border-radius:10px; }
 
     /* ── Rec status ── */
@@ -120,6 +123,13 @@
 
     /* ── Tag indicator ── */
     .noise-indicator { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; background:rgba(251,191,36,.15); color:var(--yellow); }
+
+    /* ── Collapsible ── */
+    .collapsible-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
+    .collapsible-header:hover h2 { color:var(--accent2); }
+    .collapsible-toggle { font-size:.7rem; color:var(--muted); transition:transform .2s; }
+    .collapsible-content { overflow:hidden; transition:max-height .3s ease-out; }
+    .collapsible-content.collapsed { max-height:0 !important; }
   </style>
 </head>
 <body>
@@ -131,8 +141,7 @@
 
 <!-- ═══ TAB BAR ═══ -->
 <div class="tab-bar">
-  <button class="tab active" onclick="showTab('page-presets')">🎵 Presets &amp; Notes</button>
-  <button class="tab"        onclick="showTab('page-generator')">📡 32-Channel Generator</button>
+  <button class="tab active" onclick="showTab('page-presets')">🎵 Signal Generator</button>
   <button class="tab"        onclick="showTab('page-recorder')">🎙️ Audio Recorder</button>
 </div>
 
@@ -145,10 +154,10 @@
     <!-- Left -->
     <div class="flex-col">
 
-      <!-- Wave presets -->
+      <!-- Wave presets + Fundamental -->
       <div class="card">
         <h2>Wave Presets</h2>
-        <div class="presets" style="margin-bottom:12px;">
+        <div class="presets" style="margin-bottom:14px;">
           <button class="preset-btn" data-preset="sine"     onclick="applyPreset('sine')">Sine</button>
           <button class="preset-btn" data-preset="square"   onclick="applyPreset('square')">Square</button>
           <button class="preset-btn" data-preset="sawtooth" onclick="applyPreset('sawtooth')">Sawtooth</button>
@@ -156,26 +165,27 @@
           <button class="preset-btn" data-preset="clear"    onclick="applyPreset('clear')">Clear</button>
         </div>
 
-        <h2>Noise Presets</h2>
-        <div class="presets" style="margin-bottom:14px;">
-          <button class="preset-btn noise-btn" id="noise-white-btn" onclick="applyNoise('white')">⬜ White</button>
-          <button class="preset-btn noise-btn" id="noise-pink-btn"  onclick="applyNoise('pink')">🌸 Pink</button>
-          <button class="preset-btn noise-btn" id="noise-brown-btn" onclick="applyNoise('brown')">🟤 Brown</button>
-          <button class="preset-btn noise-btn" id="noise-off-btn"   onclick="applyNoise('off')">Off</button>
-        </div>
-
-        <!-- Fundamental -->
-        <div class="flex-row" style="margin-bottom:12px;">
-          <label class="small">Fundamental:</label>
-          <input type="number" id="fundamental" value="220" min="0.001" max="32000" step="any" style="width:90px;" oninput="onFundamentalChange()"/>
-          <div class="flex-row" style="gap:4px;">
-            <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
-            <button class="unit-btn"        id="unit-khz" onclick="setFundUnit('khz')">kHz</button>
+        <h2>Fundamental</h2>
+        <div class="freq-slider-wrap" style="margin-bottom:8px;">
+          <div class="freq-slider-header">
+            <div>
+              <div class="freq-slider-val" id="fundamental-display">220.00 Hz</div>
+              <div class="freq-slider-sub" id="fundamental-note-display"></div>
+            </div>
+            <div class="flex-row" style="gap:4px;">
+              <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
+              <button class="unit-btn"        id="unit-khz" onclick="setFundUnit('khz')">kHz</button>
+            </div>
+          </div>
+          <input type="range" id="fundamental-slider" min="0" max="1000" step="1" value="402" style="width:100%;height:8px;" oninput="onFundamentalSliderChange()"/>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:.72rem;color:var(--muted);">10 Hz</span>
+            <span style="font-size:.72rem;color:var(--muted);">22 kHz</span>
           </div>
         </div>
 
         <!-- Note picker -->
-        <div class="flex-row" style="margin-bottom:4px;">
+        <div class="flex-row">
           <label class="small">Note:</label>
           <select class="styled" id="note-select" onchange="onNoteSelect()"><option value="">— pick —</option></select>
           <select class="styled" id="octave-select" onchange="onNoteSelect()">
@@ -189,34 +199,20 @@
         </div>
       </div>
 
-      <!-- Single-frequency slider + unified playback -->
+      <!-- Noise presets -->
       <div class="card">
-        <h2>Single Frequency Slider</h2>
-        <div class="freq-slider-wrap">
-          <div class="freq-slider-header">
-            <div>
-              <div class="freq-slider-val" id="slider-freq-display">220.00 Hz</div>
-              <div class="freq-slider-sub" id="slider-note-display"></div>
-            </div>
-            <div class="flex-row" style="gap:4px;">
-              <button class="unit-btn active" id="slider-unit-hz"  onclick="setSliderUnit('hz')">Hz</button>
-              <button class="unit-btn"        id="slider-unit-khz" onclick="setSliderUnit('khz')">kHz</button>
-            </div>
-          </div>
-          <input type="range" id="single-freq-range" min="0" max="1000" step="1" value="379" oninput="onSingleFreqSlider(this.value)"/>
-          <div style="display:flex;justify-content:space-between;margin-top:4px;">
-            <span style="font-size:.72rem;color:var(--muted);">1 Hz</span>
-            <span style="font-size:.72rem;color:var(--muted);">32 kHz</span>
-          </div>
+        <h2>Noise Presets</h2>
+        <div class="presets" style="margin-bottom:8px;">
+          <button class="preset-btn noise-btn" id="noise-white-btn" onclick="applyNoise('white')">⬜ White</button>
+          <button class="preset-btn noise-btn" id="noise-pink-btn"  onclick="applyNoise('pink')">🌸 Pink</button>
+          <button class="preset-btn noise-btn" id="noise-brown-btn" onclick="applyNoise('brown')">🟤 Brown</button>
+          <button class="preset-btn noise-btn" id="noise-off-btn"   onclick="applyNoise('off')">Off</button>
         </div>
+      </div>
 
-        <!-- Source selector -->
-        <div class="flex-row" style="margin-top:14px;margin-bottom:10px;gap:6px;">
-          <label class="small">Play:</label>
-          <button class="unit-btn active" id="src-slider-btn" onclick="setP1Source('slider')">Slider tone</button>
-          <button class="unit-btn"        id="src-preset-btn" onclick="setP1Source('preset')">Preset / Noise</button>
-        </div>
-
+      <!-- Playback controls -->
+      <div class="card">
+        <h2>Playback</h2>
         <div class="vol-row" style="margin-bottom:12px;">
           <label class="small">Volume</label>
           <input type="range" id="p1-volume" min="0" max="1" step="0.01" value="0.5" oninput="onP1VolumeChange()"/>
@@ -225,6 +221,20 @@
         <div class="flex-row">
           <button class="btn btn-primary" id="p1-unified-play-btn" onclick="toggleP1Unified()" style="flex:1;">▶ Play</button>
           <button class="btn btn-stop"    onclick="stopP1Unified()"                             style="flex:1;">■ Stop</button>
+        </div>
+      </div>
+
+      <!-- 32-Channel Components -->
+      <div class="card">
+        <div class="collapsible-header" onclick="toggleComponentsCollapse()">
+          <h2 style="margin-bottom:0;">Components</h2>
+          <span class="collapsible-toggle" id="components-toggle">▶</span>
+        </div>
+        <div class="collapsible-content collapsed" id="components-content">
+          <div class="harmonics-header" style="margin-top:12px;">
+            <span>#</span><span>Frequency</span><span>Amplitude</span><span></span>
+          </div>
+          <div class="harmonics-scroll" id="harmonics-list"></div>
         </div>
       </div>
 
@@ -249,32 +259,15 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════
-     PAGE 2 — 32-CHANNEL GENERATOR
-═══════════════════════════════════════════════════════════════════ -->
+     PAGE 2 — 32-CHANNEL GENERATOR (Legacy - content moved to page 1)
+══════════════════════════════════════════════════════════════════════ -->
 <div class="page" id="page-generator">
   <div class="cols cols-left-right">
 
     <!-- Left -->
     <div class="flex-col">
-      <div class="card">
-        <h2>Components <span id="p2-noise-label" class="noise-indicator" style="display:none;"></span></h2>
-        <div class="harmonics-header">
-          <span>#</span><span>Frequency</span><span>Amplitude</span><span></span>
-        </div>
-        <div class="harmonics-scroll" id="harmonics-list"></div>
-      </div>
-
-      <div class="card">
-        <h2>Playback</h2>
-        <div class="vol-row" style="margin-bottom:12px;">
-          <label class="small">Volume</label>
-          <input type="range" id="p2-volume" min="0" max="1" step="0.01" value="0.5" oninput="onP2VolumeChange()"/>
-          <span id="p2-vol-label">50%</span>
-        </div>
-        <div class="flex-row">
-          <button class="btn btn-primary" id="p2-play-btn" onclick="toggleP2()" style="flex:1;">▶ Play</button>
-          <button class="btn btn-stop"    onclick="stopP2()"                     style="flex:1;">■ Stop</button>
-        </div>
+      <div class="card" style="text-align:center;padding:40px;">
+        <p style="color:var(--muted);">The 32-channel editor has been moved to the<br/><strong>Presets &amp; Notes</strong> page.</p>
       </div>
     </div>
 
@@ -305,6 +298,17 @@
     <!-- Left -->
     <div class="flex-col">
       <div class="card">
+        <h2>Live Monitor</h2>
+        <div class="flex-row" style="margin-bottom:12px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="live-monitor" onchange="toggleLiveMonitor()"/>
+            <span>Enable live monitoring</span>
+          </label>
+        </div>
+        <div class="rec-status" id="live-status">Monitor off</div>
+      </div>
+
+      <div class="card">
         <h2>Record</h2>
         <div class="flex-row" style="margin-bottom:12px;">
           <label class="small">Duration:</label>
@@ -324,9 +328,15 @@
           <input type="range" id="rec-vol" min="0" max="1" step="0.01" value="0.8" oninput="onRecVolChange()"/>
           <span id="rec-vol-label">80%</span>
         </div>
-        <div class="flex-row" style="margin-bottom:10px;">
+        <div class="flex-row" style="margin-bottom:10px;align-items:center;">
           <button class="btn btn-green" id="pb-btn"      onclick="togglePlayback()" disabled style="flex:1;">▶ Play Recording</button>
           <button class="btn btn-stop"  id="pb-stop-btn" onclick="stopPlayback()"   disabled style="flex:1;">■ Stop</button>
+        </div>
+        <div class="flex-row" style="margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="pb-loop" onchange="onLoopToggle()"/>
+            <span style="font-size:.85rem;">Loop</span>
+          </label>
         </div>
         <!-- Playback progress -->
         <div style="position:relative;height:6px;background:var(--card2);border-radius:3px;overflow:hidden;">
@@ -345,7 +355,7 @@
         <h2>Recorded Signal Analysis</h2>
 
         <div class="graph-wrap" style="position:relative;">
-          <h3>Time Domain <span class="tag tag-rec">Recorded</span></h3>
+          <h3>Time Domain <span class="tag tag-rec" id="rec-time-tag">Recorded</span></h3>
           <canvas id="rec-canvas-time"></canvas>
           <div class="no-data" id="no-rec-time">Record audio to see waveform</div>
           <!-- Playback cursor overlay -->
@@ -353,7 +363,7 @@
         </div>
 
         <div class="graph-wrap" style="position:relative;">
-          <h3>Frequency Domain <span class="tag tag-rec">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
+          <h3>Frequency Domain <span class="tag tag-rec" id="rec-freq-tag">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
           <canvas id="rec-canvas-freq"></canvas>
           <div class="no-data" id="no-rec-freq">Record audio to see spectrum</div>
         </div>
@@ -389,9 +399,10 @@ function closestNote(hz) {
   return `${note}${oct}${cents===0?'':` ${cents>0?'+':''}${cents}¢`}`;
 }
 
-// Log-scale helpers (1 Hz – 32000 Hz mapped to 0–1000)
-function sliderToHz(v) { return Math.pow(MAX_FREQ, v/1000); }
-function hzToSlider(hz) { return Math.round(1000*Math.log(hz)/Math.log(MAX_FREQ)); }
+// Log-scale helpers for fundamental slider (10 Hz – 22000 Hz)
+const MIN_FUND = 10, MAX_FUND = 22000;
+function fundSliderToHz(v) { return Math.pow(MAX_FUND/MIN_FUND, v/1000) * MIN_FUND; }
+function fundHzToSlider(hz) { return Math.round(1000*Math.log(hz/MIN_FUND)/Math.log(MAX_FUND/MIN_FUND)); }
 
 // ── Shared AudioContext ──
 let audioCtx = null;
@@ -407,8 +418,7 @@ function ensureAudioCtx() {
 let p1Components = [];
 let p1NoiseType  = 'off';
 let p1FundUnit   = 'hz';
-let p1SliderUnit = 'hz';
-let p1SliderHz   = 220;
+let p1RowUnit    = Array.from({length:32}, ()=>'hz');
 
 // Preset playback nodes
 let p1PresetGain    = null;
@@ -418,41 +428,59 @@ let p1PresetNoise   = null;
 let p1PresetPlaying = false;
 let p1PresetAnim    = null;
 
-// Single-freq playback nodes
-let p1SingleGain    = null;
-let p1SingleOsc     = null;
-let p1SinglePlaying = false;
+let p1ComponentsCollapsed = true;
 
 function initP1() {
   // Note picker
   const sel = document.getElementById('note-select');
   NOTE_NAMES.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
-  // Slider init
-  p1SliderHz = 220;
-  document.getElementById('single-freq-range').value = hzToSlider(220);
-  updateSliderDisplay();
+  // Fundamental slider init
+  document.getElementById('fundamental-slider').value = fundHzToSlider(220);
+  updateFundamentalDisplay();
   // init components
   p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
+  renderHarmonicsList();
   applyPreset('sine');
 }
 
 /* Fundamental unit */
 function setFundUnit(u) {
-  const inp = document.getElementById('fundamental');
-  const hz  = p1FundUnit==='khz' ? (parseFloat(inp.value)||0)*1000 : (parseFloat(inp.value)||0);
   p1FundUnit = u;
-  inp.value  = u==='khz' ? +((hz/1000).toFixed(5)) : +(hz.toFixed(2));
   document.getElementById('unit-hz').classList.toggle('active', u==='hz');
   document.getElementById('unit-khz').classList.toggle('active', u==='khz');
-  onFundamentalChange();
-}
-function getFundHz() {
-  const v = parseFloat(document.getElementById('fundamental').value)||0;
-  return p1FundUnit==='khz' ? v*1000 : v;
-}
-function onFundamentalChange() {
+  updateFundamentalDisplay();
   const active = document.querySelector('.preset-btn.active');
   if (active && active.dataset.preset && active.dataset.preset!=='clear') applyPreset(active.dataset.preset);
+}
+function getFundHz() {
+  const sliderVal = parseInt(document.getElementById('fundamental-slider').value);
+  return fundSliderToHz(sliderVal);
+}
+function onFundamentalSliderChange() {
+  updateFundamentalDisplay();
+  const active = document.querySelector('.preset-btn[data-preset].active');
+  const presetName = active ? active.dataset.preset : null;
+  if (presetName && presetName !== 'clear') {
+    const f0 = Math.max(MIN_FUND, getFundHz());
+    p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
+    if (presetName === 'sine') { p1Components[0]={freq:f0,amp:1}; }
+    else if (presetName === 'square') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/n}; } }
+    else if (presetName === 'sawtooth') { for(let n=1;n<=NUM;n++){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[n-1]={freq:f,amp:1/n}; } }
+    else if (presetName === 'triangle') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/(n*n)}; } }
+    
+    if (p1PresetPlaying) {
+      updatePresetOscFreqs();
+    } else {
+      drawP1Graphs();
+    }
+  }
+}
+function updateFundamentalDisplay() {
+  const sliderVal = parseInt(document.getElementById('fundamental-slider').value);
+  const hz = fundSliderToHz(sliderVal);
+  const disp = p1FundUnit==='khz' ? `${(hz/1000).toFixed(4)} kHz` : hz>=1000 ? `${(hz/1000).toFixed(3)} kHz` : `${hz.toFixed(2)} Hz`;
+  document.getElementById('fundamental-display').textContent = disp;
+  document.getElementById('fundamental-note-display').textContent = closestNote(hz);
 }
 
 /* Note picker */
@@ -467,55 +495,34 @@ function setFundamentalFromNote() {
   const note = document.getElementById('note-select').value;
   const oct  = document.getElementById('octave-select').value;
   if (!note) return;
-  const f = Math.min(noteToFreq(note, oct), MAX_FREQ);
-  const disp = p1FundUnit==='khz' ? +((f/1000).toFixed(5)) : +(f.toFixed(2));
-  document.getElementById('fundamental').value = disp;
-  onFundamentalChange();
+  const f = Math.max(MIN_FUND, Math.min(noteToFreq(note, oct), MAX_FUND));
+  document.getElementById('fundamental-slider').value = fundHzToSlider(f);
+  updateFundamentalDisplay();
+  const active = document.querySelector('.preset-btn.active');
+  if (active && active.dataset.preset && active.dataset.preset!=='clear') applyPreset(active.dataset.preset);
 }
 
-/* Single freq slider */
-function setSliderUnit(u) {
-  p1SliderUnit = u;
-  document.getElementById('slider-unit-hz').classList.toggle('active', u==='hz');
-  document.getElementById('slider-unit-khz').classList.toggle('active', u==='khz');
-  updateSliderDisplay();
-  if (p1SinglePlaying) updateSingleOscFreq();
-}
-function onSingleFreqSlider(v) {
-  p1SliderHz = sliderToHz(parseInt(v));
-  updateSliderDisplay();
-  if (p1SinglePlaying) updateSingleOscFreq();
-}
-function updateSliderDisplay() {
-  const hz = p1SliderHz;
-  const disp = p1SliderUnit==='khz' ? `${(hz/1000).toFixed(4)} kHz` : hz>=1000 ? `${(hz/1000).toFixed(3)} kHz` : `${hz.toFixed(2)} Hz`;
-  document.getElementById('slider-freq-display').textContent = disp;
-  document.getElementById('slider-note-display').textContent = closestNote(hz);
-}
-function updateSingleOscFreq() {
-  if (p1SingleOsc) p1SingleOsc.frequency.setTargetAtTime(p1SliderHz, audioCtx.currentTime, 0.01);
-}
-
-/* ── Unified Page-1 play controls ── */
-let p1Source = 'slider'; // 'slider' | 'preset'
-
-function setP1Source(src) {
-  p1Source = src;
-  document.getElementById('src-slider-btn').classList.toggle('active', src==='slider');
-  document.getElementById('src-preset-btn').classList.toggle('active', src==='preset');
-  // If currently playing, switch source live
-  if (p1SinglePlaying || p1PresetPlaying) { stopP1Unified(); startP1Unified(); }
+function updatePresetOscFreqs() {
+  if (!p1PresetPlaying || p1PresetNoise) return;
+  const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
+  if (!active.length) return;
+  const total = active.reduce((s,c)=>s+c.amp,0)||1;
+  p1PresetOscs.forEach((item, i) => {
+    if (i < active.length) {
+      item.osc.frequency.setTargetAtTime(active[i].freq, audioCtx.currentTime, 0.01);
+      item.g.gain.setTargetAtTime(active[i].amp/total, audioCtx.currentTime, 0.01);
+    }
+  });
 }
 
 function onP1VolumeChange() {
   const v = parseFloat(document.getElementById('p1-volume').value);
   document.getElementById('p1-vol-label').textContent = Math.round(v*100)+'%';
-  if (p1SingleGain)   p1SingleGain.gain.value = v;
-  if (p1PresetGain)   p1PresetGain.gain.value = v;
+  if (p1PresetGain) p1PresetGain.gain.value = v;
 }
 
 function toggleP1Unified() {
-  (p1SinglePlaying || p1PresetPlaying) ? stopP1Unified() : startP1Unified();
+  p1PresetPlaying ? stopP1Unified() : startP1Unified();
 }
 
 function startP1Unified() {
@@ -523,55 +530,39 @@ function startP1Unified() {
   stopP1Unified();
   const vol = parseFloat(document.getElementById('p1-volume').value);
 
-  if (p1Source === 'slider') {
-    // ── Slider tone ──
-    p1SingleGain = audioCtx.createGain();
-    p1SingleGain.gain.value = vol;
-    p1SingleOsc  = audioCtx.createOscillator();
-    p1SingleOsc.type = 'sine';
-    p1SingleOsc.frequency.value = p1SliderHz;
-    p1SingleOsc.connect(p1SingleGain);
-    p1SingleGain.connect(audioCtx.destination);
-    p1SingleOsc.start();
-    p1SinglePlaying = true;
-  } else {
-    // ── Preset / noise ──
-    p1PresetGain     = audioCtx.createGain();
-    p1PresetGain.gain.value = vol;
-    p1PresetAnalyser = audioCtx.createAnalyser();
-    p1PresetAnalyser.fftSize = 8192;
-    p1PresetAnalyser.smoothingTimeConstant = 0.75;
-    p1PresetGain.connect(p1PresetAnalyser);
-    p1PresetAnalyser.connect(audioCtx.destination);
+  // ── Preset / noise ──
+  p1PresetGain     = audioCtx.createGain();
+  p1PresetGain.gain.value = vol;
+  p1PresetAnalyser = audioCtx.createAnalyser();
+  p1PresetAnalyser.fftSize = 8192;
+  p1PresetAnalyser.smoothingTimeConstant = 0.75;
+  p1PresetGain.connect(p1PresetAnalyser);
+  p1PresetAnalyser.connect(audioCtx.destination);
 
-    if (p1NoiseType !== 'off') {
-      startNoiseInto(p1NoiseType, p1PresetGain, nodes => p1PresetNoise=nodes);
-    } else {
-      const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
-      if (!active.length) { stopP1Unified(); return; }
-      const total = active.reduce((s,c)=>s+c.amp,0)||1;
-      active.forEach(c=>{
-        const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
-        osc.type='sine'; osc.frequency.value=c.freq; g.gain.value=c.amp/total;
-        osc.connect(g); g.connect(p1PresetGain); osc.start();
-        p1PresetOscs.push({osc,g});
-      });
-    }
-    p1PresetPlaying = true;
-    (function loop(){
-      if (!p1PresetPlaying) return;
-      drawLiveTime('p1-canvas-time', p1PresetAnalyser);
-      drawLiveFreq('p1-canvas-freq', p1PresetAnalyser);
-      p1PresetAnim = requestAnimationFrame(loop);
-    })();
+  if (p1NoiseType !== 'off') {
+    startNoiseInto(p1NoiseType, p1PresetGain, nodes => p1PresetNoise=nodes);
+  } else {
+    const active = p1Components.filter(c=>c.freq>0&&c.amp>0);
+    if (!active.length) { stopP1Unified(); return; }
+    const total = active.reduce((s,c)=>s+c.amp,0)||1;
+    active.forEach(c=>{
+      const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
+      osc.type='sine'; osc.frequency.value=c.freq; g.gain.value=c.amp/total;
+      osc.connect(g); g.connect(p1PresetGain); osc.start();
+      p1PresetOscs.push({osc,g});
+    });
   }
+  p1PresetPlaying = true;
+  (function loop(){
+    if (!p1PresetPlaying) return;
+    drawLiveTime('p1-canvas-time', p1PresetAnalyser);
+    drawLiveFreq('p1-canvas-freq', p1PresetAnalyser);
+    p1PresetAnim = requestAnimationFrame(loop);
+  })();
   document.getElementById('p1-unified-play-btn').textContent = '⏸ Pause';
 }
 
 function stopP1Unified() {
-  // Stop slider osc
-  if (p1SingleOsc) { try{p1SingleOsc.stop();}catch(e){} p1SingleOsc=null; }
-  p1SinglePlaying = false;
   // Stop preset nodes
   p1PresetOscs.forEach(({osc})=>{try{osc.stop();}catch(e){}});
   p1PresetOscs=[];
@@ -582,16 +573,6 @@ function stopP1Unified() {
   drawP1Graphs();
 }
 
-// Keep these aliases so applyPreset/applyNoise still work
-function stopPresetPlayNodes() {
-  p1PresetOscs.forEach(({osc})=>{try{osc.stop();}catch(e){}});
-  p1PresetOscs=[];
-  if (p1PresetNoise) { try{p1PresetNoise.stop();}catch(e){} p1PresetNoise=null; }
-}
-function stopPresetPlay() { stopP1Unified(); }
-function onPresetVolumeChange() { onP1VolumeChange(); }
-
-/* Presets */
 function applyPreset(name) {
   if (name !== 'clear') applyNoise('off', true);
   document.querySelectorAll('.preset-btn[data-preset]').forEach(b=>b.classList.remove('active'));
@@ -606,7 +587,7 @@ function applyPreset(name) {
   else if (name==='sawtooth') { for(let n=1;n<=NUM;n++){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[n-1]={freq:f,amp:1/n}; } }
   else if (name==='triangle') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/(n*n)}; } }
 
-  if (p1PresetPlaying || p1SinglePlaying) { stopP1Unified(); if(p1Source==='preset') startP1Unified(); }
+  if (p1PresetPlaying) { stopP1Unified(); startP1Unified(); }
   drawP1Graphs();
 }
 function applyNoise(type, silent) {
@@ -616,29 +597,13 @@ function applyNoise(type, silent) {
   const lbl = document.getElementById('p1-noise-label');
   lbl.style.display = type!=='off' ? 'inline-block' : 'none';
   if (type!=='off') lbl.textContent = type.charAt(0).toUpperCase()+type.slice(1)+' Noise';
-  if (!silent) { if (p1PresetPlaying || p1SinglePlaying) { stopP1Unified(); if(p1Source==='preset') startP1Unified(); } drawP1Graphs(); }
+  if (!silent) { if (p1PresetPlaying) { stopP1Unified(); startP1Unified(); } drawP1Graphs(); }
 }
 
 function drawP1Graphs() {
-  if (p1PresetPlaying || p1SinglePlaying) return;
+  if (p1PresetPlaying) return;
   if (p1NoiseType!=='off') { drawNoiseTime('p1-canvas-time', p1NoiseType); drawNoiseFreq('p1-canvas-freq', p1NoiseType); }
   else { drawStaticTime('p1-canvas-time', p1Components); drawStaticFreq('p1-canvas-freq', p1Components); }
-}
-
-// ════════════════════════════════════════════════════════
-// PAGE 2 — 32-CHANNEL GENERATOR
-// ════════════════════════════════════════════════════════
-let p2Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
-let rowUnit      = Array.from({length:NUM}, ()=>'hz');
-let p2Gain       = null;
-let p2Analyser   = null;
-let p2Oscs       = [];
-let p2Noise      = null;
-let p2Playing    = false;
-let p2Anim       = null;
-
-function initP2() {
-  renderHarmonicsList();
 }
 
 function renderHarmonicsList() {
@@ -647,89 +612,60 @@ function renderHarmonicsList() {
   for (let i=0;i<NUM;i++) {
     const row = document.createElement('div');
     row.className = 'harmonic-row';
-    const dv = freqDispVal(p2Components[i].freq, rowUnit[i]);
+    const dv = freqDispVal(p1Components[i].freq, p1RowUnit[i]);
     row.innerHTML = `
       <span class="idx">${i+1}</span>
       <div class="freq-input-wrap">
-        <input type="text" id="p2freq-${i}" value="${dv||''}" placeholder="${rowUnit[i]==='khz'?'kHz':'Hz'}"
-          oninput="onP2FreqChange(${i},this.value)"
-          class="${p2Components[i].freq>0?'active-freq':''}"/>
-        <span class="freq-unit-toggle" id="p2unit-${i}" onclick="toggleP2RowUnit(${i})">${rowUnit[i]==='khz'?'kHz':'Hz'}</span>
+        <input type="text" id="p1freq-${i}" value="${dv||''}" placeholder="${p1RowUnit[i]==='khz'?'kHz':'Hz'}"
+          oninput="onP1FreqChange(${i},this.value)"
+          class="${p1Components[i].freq>0?'active-freq':''}"/>
+        <span class="freq-unit-toggle" id="p1unit-${i}" onclick="toggleP1RowUnit(${i})">${p1RowUnit[i]==='khz'?'kHz':'Hz'}</span>
       </div>
-      <input type="range" id="p2amp-${i}" min="0" max="1" step="0.01" value="${p2Components[i].amp}"
-        oninput="onP2AmpChange(${i},this.value)"/>
-      <span class="amp-val" id="p2ampval-${i}">${Math.round(p2Components[i].amp*100)}%</span>`;
+      <input type="range" id="p1amp-${i}" min="0" max="1" step="0.01" value="${p1Components[i].amp}"
+        oninput="onP1AmpChange(${i},this.value)"/>
+      <span class="amp-val" id="p1ampval-${i}">${Math.round(p1Components[i].amp*100)}%</span>`;
     list.appendChild(row);
+  }
+}
+function toggleComponentsCollapse() {
+  const content = document.getElementById('components-content');
+  const toggle = document.getElementById('components-toggle');
+  p1ComponentsCollapsed = !p1ComponentsCollapsed;
+  if (p1ComponentsCollapsed) {
+    content.classList.add('collapsed');
+    toggle.textContent = '▶';
+  } else {
+    content.classList.remove('collapsed');
+    toggle.textContent = '▼';
   }
 }
 function freqDispVal(hz, unit) {
   if (!hz||hz<=0) return '';
   return unit==='khz' ? +((hz/1000).toFixed(5)) : +(hz.toFixed(2));
 }
-function toggleP2RowUnit(i) {
-  rowUnit[i] = rowUnit[i]==='hz'?'khz':'hz';
-  const inp = document.getElementById(`p2freq-${i}`);
-  inp.placeholder = rowUnit[i]==='khz'?'kHz':'Hz';
-  inp.value = freqDispVal(p2Components[i].freq, rowUnit[i])||'';
-  document.getElementById(`p2unit-${i}`).textContent = rowUnit[i]==='khz'?'kHz':'Hz';
+function toggleP1RowUnit(i) {
+  p1RowUnit[i] = p1RowUnit[i]==='hz'?'khz':'hz';
+  const inp = document.getElementById(`p1freq-${i}`);
+  inp.placeholder = p1RowUnit[i]==='khz'?'kHz':'Hz';
+  inp.value = freqDispVal(p1Components[i].freq, p1RowUnit[i])||'';
+  document.getElementById(`p1unit-${i}`).textContent = p1RowUnit[i]==='khz'?'kHz':'Hz';
 }
-function onP2FreqChange(i, val) {
-  const v=parseFloat(val), hz=rowUnit[i]==='khz'?v*1000:v;
-  p2Components[i].freq = (!isNaN(hz)&&hz>0) ? Math.min(hz,MAX_FREQ) : 0;
-  document.getElementById(`p2freq-${i}`).classList.toggle('active-freq', p2Components[i].freq>0);
-  if (p2Playing) restartP2();
-  drawP2Graphs();
+function onP1FreqChange(i, val) {
+  const v=parseFloat(val), hz=p1RowUnit[i]==='khz'?v*1000:v;
+  p1Components[i].freq = (!isNaN(hz)&&hz>0) ? Math.min(hz,MAX_FREQ) : 0;
+  document.getElementById(`p1freq-${i}`).classList.toggle('active-freq', p1Components[i].freq>0);
+  // Clear preset selection since user is manually editing
+  document.querySelectorAll('.preset-btn[data-preset]').forEach(b=>b.classList.remove('active'));
+  if (p1PresetPlaying) updatePresetOscFreqs();
+  drawP1Graphs();
 }
-function onP2AmpChange(i, val) {
-  p2Components[i].amp = parseFloat(val);
-  document.getElementById(`p2ampval-${i}`).textContent = Math.round(p2Components[i].amp*100)+'%';
-  if (p2Playing) restartP2();
-  drawP2Graphs();
-}
-
-function onP2VolumeChange() {
-  const v=parseFloat(document.getElementById('p2-volume').value);
-  document.getElementById('p2-vol-label').textContent=Math.round(v*100)+'%';
-  if (p2Gain) p2Gain.gain.value=v;
-}
-function toggleP2() { p2Playing ? stopP2() : startP2(); }
-function startP2() {
-  ensureAudioCtx();
-  stopP2Nodes();
-  p2Gain = audioCtx.createGain();
-  p2Gain.gain.value = parseFloat(document.getElementById('p2-volume').value);
-  p2Analyser = audioCtx.createAnalyser();
-  p2Analyser.fftSize=8192; p2Analyser.smoothingTimeConstant=0.75;
-  p2Gain.connect(p2Analyser); p2Analyser.connect(audioCtx.destination);
-
-  const active = p2Components.filter(c=>c.freq>0&&c.amp>0);
-  if (!active.length) return;
-  const total=active.reduce((s,c)=>s+c.amp,0)||1;
-  active.forEach(c=>{
-    const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
-    osc.type='sine'; osc.frequency.value=c.freq; g.gain.value=c.amp/total;
-    osc.connect(g); g.connect(p2Gain); osc.start();
-    p2Oscs.push({osc,g});
-  });
-  p2Playing=true;
-  document.getElementById('p2-play-btn').textContent='⏸ Pause';
-  (function loop(){ if(!p2Playing)return; drawLiveTime('p2-canvas-time',p2Analyser); drawLiveFreq('p2-canvas-freq',p2Analyser); p2Anim=requestAnimationFrame(loop); })();
-}
-function stopP2() {
-  stopP2Nodes(); p2Playing=false; cancelAnimationFrame(p2Anim);
-  document.getElementById('p2-play-btn').textContent='▶ Play';
-  drawP2Graphs();
-}
-function stopP2Nodes() {
-  p2Oscs.forEach(({osc})=>{try{osc.stop();}catch(e){}});
-  p2Oscs=[];
-}
-function restartP2() { if(p2Playing){stopP2Nodes();startP2();} }
-
-function drawP2Graphs() {
-  if (p2Playing) return;
-  drawStaticTime('p2-canvas-time', p2Components);
-  drawStaticFreq('p2-canvas-freq', p2Components);
+function onP1AmpChange(i, val) {
+  p1Components[i].amp = parseFloat(val);
+  document.getElementById(`p1ampval-${i}`).textContent = Math.round(p1Components[i].amp*100)+'%';
+  // Clear preset selection since user is manually editing
+  document.querySelectorAll('.preset-btn[data-preset]').forEach(b=>b.classList.remove('active'));
+  if (p1PresetPlaying) updatePresetOscFreqs();
+  drawP1Graphs();
 }
 
 // ════════════════════════════════════════════════════════
@@ -737,6 +673,11 @@ function drawP2Graphs() {
 // ════════════════════════════════════════════════════════
 let mediaRecorder  = null;
 let isRecording    = false;
+let isLiveMonitor = false;
+let liveStream    = null;
+let liveCtx       = null;
+let liveAnalyser  = null;
+let liveAnim      = null;
 let recChunks      = [];
 let recCountdown   = null;
 let recordedBlob   = null;
@@ -746,9 +687,13 @@ let pbSource       = null;
 let pbAnalyser     = null;
 let pbGain         = null;
 let pbPlaying      = false;
+let pbLooping      = false;
 let pbStartTime    = 0;
 let pbOffset       = 0;
 let pbAnim         = null;
+let pbLoopStartTime = 0;
+let recAnalyser    = null;
+let recAnim        = null;
 
 function onRecVolChange() {
   const v=parseFloat(document.getElementById('rec-vol').value);
@@ -756,16 +701,98 @@ function onRecVolChange() {
   if (pbGain) pbGain.gain.value=v;
 }
 
+async function toggleLiveMonitor() {
+  if (isLiveMonitor) {
+    stopLiveMonitor();
+  } else {
+    await startLiveMonitor();
+  }
+}
+
+async function startLiveMonitor() {
+  try {
+    if (isRecording) stopRecording();
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    liveStream = stream;
+    liveCtx = new (window.AudioContext||window.webkitAudioContext)();
+    liveAnalyser = liveCtx.createAnalyser();
+    liveAnalyser.fftSize = 8192;
+    liveAnalyser.smoothingTimeConstant = 0.6;
+    const source = liveCtx.createMediaStreamSource(stream);
+    source.connect(liveAnalyser);
+    
+    isLiveMonitor = true;
+    document.getElementById('live-monitor').checked = true;
+    document.getElementById('live-status').textContent = 'Monitoring live audio';
+    document.getElementById('live-status').classList.add('ok');
+    document.getElementById('no-rec-time').style.display='none';
+    document.getElementById('no-rec-freq').style.display='none';
+    
+    const timeTag = document.getElementById('rec-time-tag');
+    const freqTag = document.getElementById('rec-freq-tag');
+    timeTag.textContent = 'Live';
+    freqTag.textContent = 'Live';
+    timeTag.className = 'tag tag-live';
+    freqTag.className = 'tag tag-live';
+
+    (function liveLoop() {
+      if (!isLiveMonitor) return;
+      drawLiveTime('rec-canvas-time', liveAnalyser);
+      drawLiveFreq('rec-canvas-freq', liveAnalyser);
+      liveAnim = requestAnimationFrame(liveLoop);
+    })();
+  } catch(e) {
+    document.getElementById('live-status').textContent = 'Microphone access denied';
+  }
+}
+
+function stopLiveMonitor() {
+  cancelAnimationFrame(liveAnim);
+  if (liveStream) {
+    liveStream.getTracks().forEach(t => t.stop());
+    liveStream = null;
+  }
+  if (liveCtx) {
+    liveCtx.close();
+    liveCtx = null;
+  }
+  liveAnalyser = null;
+  isLiveMonitor = false;
+  document.getElementById('live-monitor').checked = false;
+  document.getElementById('live-status').textContent = 'Monitor off';
+  document.getElementById('live-status').classList.remove('ok');
+  
+  const timeTag = document.getElementById('rec-time-tag');
+  const freqTag = document.getElementById('rec-freq-tag');
+  timeTag.textContent = 'Recorded';
+  freqTag.textContent = 'Recorded';
+  timeTag.className = 'tag tag-rec';
+  freqTag.className = 'tag tag-rec';
+  
+  if (!recordedBuffer) {
+    document.getElementById('no-rec-time').style.display='flex';
+    document.getElementById('no-rec-freq').style.display='flex';
+  }
+}
+
 async function toggleRecord() {
   isRecording ? stopRecording() : await startRecording();
 }
 async function startRecording() {
   try {
+    if (isLiveMonitor) stopLiveMonitor();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     recChunks=[]; recordedBlob=null; recordedBuffer=null;
     document.getElementById('pb-btn').disabled=true;
     document.getElementById('pb-stop-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
+
+    const recCtx = new (window.AudioContext||window.webkitAudioContext)();
+    recAnalyser = recCtx.createAnalyser();
+    recAnalyser.fftSize = 8192;
+    recAnalyser.smoothingTimeConstant = 0.6;
+    const micSource = recCtx.createMediaStreamSource(stream);
+    micSource.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
     mediaRecorder.ondataavailable=e=>recChunks.push(e.data);
@@ -774,6 +801,14 @@ async function startRecording() {
     isRecording=true;
     document.getElementById('rec-btn').textContent='⏹ Stop';
     document.getElementById('rec-btn').classList.add('recording');
+    document.getElementById('no-rec-time').style.display='none';
+    document.getElementById('no-rec-freq').style.display='none';
+    const timeTag = document.getElementById('rec-time-tag');
+    const freqTag = document.getElementById('rec-freq-tag');
+    timeTag.textContent = 'Live';
+    freqTag.textContent = 'Live';
+    timeTag.className = 'tag tag-live';
+    freqTag.className = 'tag tag-live';
 
     let rem=parseInt(document.getElementById('rec-duration').value);
     setRecStatus(`🔴 Recording… ${rem}s remaining`);
@@ -782,15 +817,30 @@ async function startRecording() {
       if (rem<=0){clearInterval(recCountdown);stopRecording();}
       else setRecStatus(`🔴 Recording… ${rem}s remaining`);
     },1000);
+
+    (function liveLoop() {
+      if (!isRecording) return;
+      drawLiveTime('rec-canvas-time', recAnalyser);
+      drawLiveFreq('rec-canvas-freq', recAnalyser);
+      recAnim = requestAnimationFrame(liveLoop);
+    })();
   } catch(e) { setRecStatus('⚠️ Microphone access denied'); }
 }
 function stopRecording() {
   clearInterval(recCountdown);
+  cancelAnimationFrame(recAnim);
   if (mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
   mediaRecorder?.stream?.getTracks().forEach(t=>t.stop());
   isRecording=false;
+  recAnalyser = null;
   document.getElementById('rec-btn').textContent='⏺ Record';
   document.getElementById('rec-btn').classList.remove('recording');
+  const timeTag = document.getElementById('rec-time-tag');
+  const freqTag = document.getElementById('rec-freq-tag');
+  timeTag.textContent = 'Recorded';
+  freqTag.textContent = 'Recorded';
+  timeTag.className = 'tag tag-rec';
+  freqTag.className = 'tag tag-rec';
   setRecStatus('Processing…');
 }
 async function processRecording() {
@@ -815,6 +865,7 @@ function startPlayback() {
   if (!recordedBuffer) return;
   stopPlayback();
 
+  pbLooping = document.getElementById('pb-loop').checked;
   pbAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
   pbGain     = pbAudioCtx.createGain();
   pbGain.gain.value = parseFloat(document.getElementById('rec-vol').value);
@@ -824,12 +875,14 @@ function startPlayback() {
 
   pbSource = pbAudioCtx.createBufferSource();
   pbSource.buffer = recordedBuffer;
+  pbSource.loop = pbLooping;
   pbSource.connect(pbGain);
   pbSource.onended = () => {
-    if (pbPlaying) stopPlayback();
+    if (pbPlaying && !pbLooping) stopPlayback();
   };
   pbStartTime = pbAudioCtx.currentTime;
   pbOffset    = 0;
+  if (pbLooping) pbLoopStartTime = pbAudioCtx.currentTime;
   pbSource.start(0);
   pbPlaying   = true;
   document.getElementById('pb-btn').textContent='⏸ Playing…';
@@ -838,7 +891,13 @@ function startPlayback() {
   const dur = recordedBuffer.duration;
   (function loop(){
     if (!pbPlaying) return;
-    const elapsed = pbAudioCtx.currentTime - pbStartTime;
+    let elapsed;
+    if (pbLooping) {
+      elapsed = pbAudioCtx.currentTime - pbLoopStartTime;
+      elapsed = elapsed % dur;
+    } else {
+      elapsed = pbAudioCtx.currentTime - pbStartTime;
+    }
     const pct = Math.min(elapsed/dur,1)*100;
     document.getElementById('pb-progress').style.width=pct+'%';
     document.getElementById('pb-time-cur').textContent=elapsed.toFixed(2)+'s';
@@ -865,6 +924,14 @@ function stopPlayback() {
   if (recordedBuffer) {
     drawRecordedTime(recordedBuffer.getChannelData(0), recordedBuffer.sampleRate);
     drawRecordedFreq(recordedBuffer.getChannelData(0), recordedBuffer.sampleRate);
+  }
+}
+
+function onLoopToggle() {
+  if (pbPlaying) {
+    pbLooping = document.getElementById('pb-loop').checked;
+    if (pbSource) pbSource.loop = pbLooping;
+    if (pbLooping) pbLoopStartTime = pbAudioCtx.currentTime;
   }
 }
 
@@ -954,8 +1021,9 @@ function drawStaticFreq(canvasId, components) {
   if (!active.length){drawNoDataText(ctx,W,H,'Add frequencies');return;}
   const maxAmp=Math.max(...active.map(c=>c.amp));
   const padX=40,padBot=22,padTop=10;
+  const MIN_FREQ_LOG = 10;
   active.forEach(c=>{
-    const x=padX+(c.freq/MAX_FREQ)*(W-padX-10);
+    const x=padX+(Math.log(c.freq/MIN_FREQ_LOG)/Math.log(MAX_FREQ/MIN_FREQ_LOG))*(W-padX-10);
     const barH=(c.amp/maxAmp)*(H-padTop-padBot);
     const y=H-padBot-barH;
     const grad=ctx.createLinearGradient(0,y,0,H-padBot);
@@ -966,7 +1034,7 @@ function drawStaticFreq(canvasId, components) {
   });
   ctx.strokeStyle='#2e3250'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(padX,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
-  drawAxisLabels(ctx,W,H,'0 Hz','32 kHz');
+  drawLogFreqLabels(ctx,W,H,padX,padBot);
 }
 
 function drawLiveTime(canvasId, analyser) {
@@ -995,26 +1063,45 @@ function drawLiveFreq(canvasId, analyser) {
 }
 
 function drawFreqBars(ctx, W, H, data, sampleRate) {
-  // Map bins to 0–32kHz range
   const nyquist = sampleRate/2;
   const maxDisplay = Math.min(MAX_FREQ, nyquist);
-  const maxBin = Math.floor((maxDisplay/nyquist)*data.length);
-  const padBot=22;
-  const bw=W/maxBin;
-  for(let i=0;i<maxBin;i++){
-    const barH=(data[i]/255)*(H-padBot);
-    const hue=200+(data[i]/255)*60;
+  const MIN_FREQ_LOG = 10;
+  const padX = 40;
+  const padBot = 22;
+  const usableW = W - padX - 10;
+  
+  // Find max value for normalization
+  let maxVal = 0;
+  for(let i=0;i<data.length;i++) if(data[i]>maxVal) maxVal=data[i];
+  if(maxVal===0) maxVal=255;
+  
+  // Draw bars at logarithmic positions
+  const numBars = 200;
+  for(let i=0;i<numBars;i++){
+    const frac = i/numBars;
+    const freq = MIN_FREQ_LOG * Math.pow(maxDisplay/MIN_FREQ_LOG, frac);
+    const bin = Math.floor((freq/nyquist)*data.length);
+    if(bin >= data.length) break;
+    const x = padX + frac * usableW;
+    const barH = (data[bin]/maxVal)*(H-padBot-5);
+    const hue = 200+(data[bin]/255)*60;
     ctx.fillStyle=`hsl(${hue},80%,60%)`;
-    ctx.fillRect(i*bw,H-padBot-barH,Math.max(1,bw-0.5),barH);
+    const barW = Math.max(1, (1/numBars) * usableW - 1);
+    ctx.fillRect(x, H-padBot-barH, barW, barH);
   }
+  
   // X axis
   ctx.strokeStyle='#2e3250'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
-  // Freq labels
+  ctx.beginPath(); ctx.moveTo(padX,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
+  drawLogFreqLabels(ctx,W,H,padX,padBot);
+}
+
+function drawLogFreqLabels(ctx,W,H,padX,padBot) {
   ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
-  [0,4000,8000,12000,16000,20000,24000,28000,32000].forEach(f=>{
-    if(f>maxDisplay) return;
-    const x=(f/maxDisplay)*W;
+  [10,20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f=>{
+    if(f>MAX_FREQ) return;
+    const MIN_FREQ_LOG = 10;
+    const x=padX+(Math.log(f/MIN_FREQ_LOG)/Math.log(MAX_FREQ/MIN_FREQ_LOG))*(W-padX-10);
     ctx.fillText(f>=1000?`${f/1000}k`:f, x, H-5);
   });
 }
@@ -1038,8 +1125,12 @@ function drawNoiseFreq(canvasId, type) {
   const ctx=setupCanvas(canvas); const {W,H}=dims(canvas);
   drawGrid(ctx,W,H);
   const padBot=22;
+  const padX=40;
+  const MIN_FREQ_LOG = 10;
   for(let i=0;i<W;i++){
-    const f=i/W;
+    const frac = i/(W-1);
+    const freq = MIN_FREQ_LOG * Math.pow(MAX_FREQ/MIN_FREQ_LOG, frac);
+    const f = freq/MAX_FREQ;
     let amp;
     if (type==='white') amp=0.85+(Math.random()-.5)*.1;
     else if (type==='pink') amp=(1-f*.7)*(0.85+(Math.random()-.5)*.1);
@@ -1049,8 +1140,8 @@ function drawNoiseFreq(canvasId, type) {
     ctx.fillRect(i,H-padBot-barH,1,barH);
   }
   ctx.strokeStyle='#2e3250'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
-  drawAxisLabels(ctx,W,H,'0 Hz','32 kHz');
+  ctx.beginPath(); ctx.moveTo(padX,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
+  drawLogFreqLabels(ctx,W,H,padX,padBot);
 }
 
 /* Noise buffer generator */
@@ -1114,11 +1205,10 @@ function showTab(pageId) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  const idx = ['page-presets','page-generator','page-recorder'].indexOf(pageId);
+  const idx = ['page-presets','page-recorder'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   // Redraw static graphs for the activated page
-  if (pageId==='page-presets' && !p1PresetPlaying && !p1SinglePlaying) drawP1Graphs();
-  if (pageId==='page-generator' && !p2Playing) drawP2Graphs();
+  if (pageId==='page-presets' && !p1PresetPlaying) drawP1Graphs();
   if (pageId==='page-recorder' && recordedBuffer && !pbPlaying) {
     drawRecordedTime(recordedBuffer.getChannelData(0),recordedBuffer.sampleRate);
     drawRecordedFreq(recordedBuffer.getChannelData(0),recordedBuffer.sampleRate);
@@ -1129,12 +1219,10 @@ function showTab(pageId) {
 // BOOT
 // ════════════════════════════════════════════════════════
 window.addEventListener('resize', ()=>{
-  if (!p1PresetPlaying && !p1SinglePlaying) drawP1Graphs();
-  if (!p2Playing) drawP2Graphs();
+  if (!p1PresetPlaying) drawP1Graphs();
 });
 
 initP1();
-initP2();
 </script>
 </body>
 </html>
