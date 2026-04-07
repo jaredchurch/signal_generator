@@ -512,8 +512,9 @@ function setFundamentalFromNote() {
   const oct  = document.getElementById('octave-select').value;
   if (!note) return;
   const f = Math.max(MIN_FUND, Math.min(noteToFreq(note, oct), MAX_FUND));
+  p1FundHz = f;
+  document.getElementById('fundamental-input').value = p1FundUnit==='khz' ? (f/1000).toFixed(4) : f.toFixed(2);
   document.getElementById('fundamental-slider').value = fundHzToSlider(f);
-  updateFundamentalDisplay();
   const active = document.querySelector('.preset-btn.active');
   if (active && active.dataset.preset && active.dataset.preset!=='clear') applyPreset(active.dataset.preset);
 }
