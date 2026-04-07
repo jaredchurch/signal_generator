@@ -1220,6 +1220,7 @@ function showTab(pageId) {
   document.getElementById(pageId).classList.add('active');
   const idx = ['page-presets','page-recorder'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
+  localStorage.setItem('activeTab', pageId);
   // Redraw static graphs for the activated page
   if (pageId==='page-presets' && !p1PresetPlaying) drawP1Graphs();
   if (pageId==='page-recorder' && recordedBuffer && !pbPlaying) {
@@ -1234,6 +1235,12 @@ function showTab(pageId) {
 window.addEventListener('resize', ()=>{
   if (!p1PresetPlaying) drawP1Graphs();
 });
+
+// Restore active tab from localStorage
+const savedTab = localStorage.getItem('activeTab');
+if (savedTab && ['page-presets','page-recorder'].includes(savedTab)) {
+  showTab(savedTab);
+}
 
 initP1();
 </script>
