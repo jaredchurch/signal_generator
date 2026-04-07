@@ -1,0 +1,20 @@
+{
+  "name": "Signal Generator",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postCreateCommand": "curl -fsSL https://opencode.ai/install | bash && mkdir -p ~/.config/opencode && printf '%s\\n' '{' '  \"$schema\": \"https://opencode.ai/config.json\",' '  \"model\": \"opencode/big-pickle\"' '}' > ~/.config/opencode/opencode.json",
+  "postStartCommand": "npm run dev",
+  "portsAttributes": {
+    "3000": {
+      "label": "Signal Generator",
+      "onAutoForward": "openPreview"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  },
+  "mounts": [
+    "source=${local:~}/.config/opencode,target=/home/node/.config/opencode,type=bind"
+  ]
+}

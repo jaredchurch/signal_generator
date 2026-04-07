@@ -1,0 +1,20 @@
+{
+  "name": "signal_generator",
+  "version": "1.0.0",
+  "description": "Signal generator and analyser — sum of sine waves, time/frequency domain visualisation, audio recording",
+  "scripts": {
+    "dev": "npx serve -l 3000 .",
+    "start": "npx serve -l 3000 ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaredchurch/signal_generator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jaredchurch/signal_generator/issues"
+  },
+  "homepage": "https://github.com/jaredchurch/signal_generator#readme"
+}

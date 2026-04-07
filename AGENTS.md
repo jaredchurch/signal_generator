@@ -1,0 +1,26 @@
+# Signal Generator
+
+## Overview
+Single-file web app (`index.html`) — no build system, tests, or CI.
+
+## Development
+- `npm run dev` — Start dev server on port 3000 (serves `index.html`)
+- Open `index.html` directly in a browser to test
+- All logic is embedded in the file — HTML, CSS, and JS in one document
+- No external dependencies or CDN resources
+
+## GitHub Codespace
+- Port 3000 is auto-forwarded and opens preview
+- Server auto-starts via `postStartCommand` in devcontainer.json
+
+## Key Technical Details
+- Uses Web Audio API (`AudioContext`, `OscillatorNode`, `AnalyserNode`, `MediaRecorder`)
+- Canvas-based visualizations with high-DPI support via `devicePixelRatio`
+- Recording requires microphone permission (`navigator.mediaDevices.getUserMedia`)
+- Frequency range: 1 Hz – 32 kHz (logarithmic slider mapping)
+- Supports sine, square, sawtooth, triangle waveforms + white/pink/brown noise
+
+## Common Changes
+- Frequency unit toggle (Hz/kHz) is per-row on page 2, per-control on page 1
+- Live visualizations use `requestAnimationFrame` loops with `AnalyserNode` FFT data
+- Static visualizations computed from component array, rendered to canvas
