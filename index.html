@@ -168,9 +168,12 @@
         <h2>Fundamental</h2>
         <div class="freq-slider-wrap" style="margin-bottom:8px;">
           <div class="freq-slider-header">
-            <div>
-              <div class="freq-slider-val" id="fundamental-display">220.00 Hz</div>
-              <div class="freq-slider-sub" id="fundamental-note-display"></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="text" id="fundamental-input" class="styled" style="width:100px;font-size:1.1rem;font-weight:700;text-align:right;padding:4px 8px;" onchange="onFundamentalInputChange()" onkeypress="if(event.key==='Enter')this.blur()"/>
+              <div>
+                <div class="freq-slider-val" id="fundamental-display">220.00 Hz</div>
+                <div class="freq-slider-sub" id="fundamental-note-display"></div>
+              </div>
             </div>
             <div class="flex-row" style="gap:4px;">
               <button class="unit-btn active" id="unit-hz"  onclick="setFundUnit('hz')">Hz</button>
@@ -419,6 +422,7 @@ let p1Components = [];
 let p1NoiseType  = 'off';
 let p1FundUnit   = 'hz';
 let p1RowUnit    = Array.from({length:32}, ()=>'hz');
+let p1FundHz     = 220;
 
 // Preset playback nodes
 let p1PresetGain    = null;
@@ -435,7 +439,8 @@ function initP1() {
   const sel = document.getElementById('note-select');
   NOTE_NAMES.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
   // Fundamental slider init
-  document.getElementById('fundamental-slider').value = fundHzToSlider(220);
+  p1FundHz = 220;
+  document.getElementById('fundamental-slider').value = fundHzToSlider(p1FundHz);
   updateFundamentalDisplay();
   // init components
   p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
@@ -457,11 +462,12 @@ function getFundHz() {
   return fundSliderToHz(sliderVal);
 }
 function onFundamentalSliderChange() {
+  p1FundHz = fundSliderToHz(parseInt(document.getElementById('fundamental-slider').value));
   updateFundamentalDisplay();
   const active = document.querySelector('.preset-btn[data-preset].active');
   const presetName = active ? active.dataset.preset : null;
   if (presetName && presetName !== 'clear') {
-    const f0 = Math.max(MIN_FUND, getFundHz());
+    const f0 = Math.max(MIN_FUND, p1FundHz);
     p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
     if (presetName === 'sine') { p1Components[0]={freq:f0,amp:1}; }
     else if (presetName === 'square') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/n}; } }
@@ -478,11 +484,26 @@ function onFundamentalSliderChange() {
   }
 }
 function updateFundamentalDisplay() {
-  const sliderVal = parseInt(document.getElementById('fundamental-slider').value);
-  const hz = fundSliderToHz(sliderVal);
+  const hz = p1FundHz;
   const disp = p1FundUnit==='khz' ? `${(hz/1000).toFixed(4)} kHz` : hz>=1000 ? `${(hz/1000).toFixed(3)} kHz` : `${hz.toFixed(2)} Hz`;
   document.getElementById('fundamental-display').textContent = disp;
   document.getElementById('fundamental-note-display').textContent = closestNote(hz);
+  const inputVal = p1FundUnit==='khz' ? (hz/1000).toFixed(4) : hz.toFixed(2);
+  const active = document.activeElement;
+  if (!active || active.id !== 'fundamental-input') {
+    document.getElementById('fundamental-input').value = inputVal;
+  }
+}
+function onFundamentalInputChange() {
+  const inp = document.getElementById('fundamental-input');
+  let v = parseFloat(inp.value);
+  if (isNaN(v) || v <= 0) { updateFundamentalDisplay(); return; }
+  const hz = p1FundUnit === 'khz' ? v * 1000 : v;
+  p1FundHz = Math.max(MIN_FUND, Math.min(hz, MAX_FUND));
+  document.getElementById('fundamental-slider').value = fundHzToSlider(p1FundHz);
+  updateFundamentalDisplay();
+  const active = document.querySelector('.preset-btn[data-preset].active');
+  if (active && active.dataset.preset && active.dataset.preset !== 'clear') applyPreset(active.dataset.preset);
 }
 
 /* Note picker */
@@ -581,7 +602,7 @@ function applyPreset(name) {
   const btn = document.querySelector(`.preset-btn[data-preset="${name}"]`);
   if (btn) btn.classList.add('active');
 
-  const f0 = Math.max(1, getFundHz());
+  const f0 = Math.max(1, p1FundHz);
   p1Components = Array.from({length:NUM}, ()=>({freq:0,amp:0}));
 
   if (name==='sine')     { p1Components[0]={freq:f0,amp:1}; }
