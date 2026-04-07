@@ -110,6 +110,8 @@
     .tag { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; }
     .tag-gen { background:rgba(108,138,255,.2); color:var(--accent); }
     .tag-rec { background:rgba(248,113,113,.2); color:var(--red); }
+    .tag-live { background:rgba(34,197,94,.2); color:var(--green); animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
     .no-data { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.82rem; pointer-events:none; border-radius:10px; }
 
     /* ── Rec status ── */
@@ -296,6 +298,17 @@
     <!-- Left -->
     <div class="flex-col">
       <div class="card">
+        <h2>Live Monitor</h2>
+        <div class="flex-row" style="margin-bottom:12px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="live-monitor" onchange="toggleLiveMonitor()"/>
+            <span>Enable live monitoring</span>
+          </label>
+        </div>
+        <div class="rec-status" id="live-status">Monitor off</div>
+      </div>
+
+      <div class="card">
         <h2>Record</h2>
         <div class="flex-row" style="margin-bottom:12px;">
           <label class="small">Duration:</label>
@@ -342,7 +355,7 @@
         <h2>Recorded Signal Analysis</h2>
 
         <div class="graph-wrap" style="position:relative;">
-          <h3>Time Domain <span class="tag tag-rec">Recorded</span></h3>
+          <h3>Time Domain <span class="tag tag-rec" id="rec-time-tag">Recorded</span></h3>
           <canvas id="rec-canvas-time"></canvas>
           <div class="no-data" id="no-rec-time">Record audio to see waveform</div>
           <!-- Playback cursor overlay -->
@@ -350,7 +363,7 @@
         </div>
 
         <div class="graph-wrap" style="position:relative;">
-          <h3>Frequency Domain <span class="tag tag-rec">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
+          <h3>Frequency Domain <span class="tag tag-rec" id="rec-freq-tag">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
           <canvas id="rec-canvas-freq"></canvas>
           <div class="no-data" id="no-rec-freq">Record audio to see spectrum</div>
         </div>
@@ -660,6 +673,11 @@ function onP1AmpChange(i, val) {
 // ════════════════════════════════════════════════════════
 let mediaRecorder  = null;
 let isRecording    = false;
+let isLiveMonitor = false;
+let liveStream    = null;
+let liveCtx       = null;
+let liveAnalyser  = null;
+let liveAnim      = null;
 let recChunks      = [];
 let recCountdown   = null;
 let recordedBlob   = null;
@@ -674,6 +692,8 @@ let pbStartTime    = 0;
 let pbOffset       = 0;
 let pbAnim         = null;
 let pbLoopStartTime = 0;
+let recAnalyser    = null;
+let recAnim        = null;
 
 function onRecVolChange() {
   const v=parseFloat(document.getElementById('rec-vol').value);
@@ -681,16 +701,98 @@ function onRecVolChange() {
   if (pbGain) pbGain.gain.value=v;
 }
 
+async function toggleLiveMonitor() {
+  if (isLiveMonitor) {
+    stopLiveMonitor();
+  } else {
+    await startLiveMonitor();
+  }
+}
+
+async function startLiveMonitor() {
+  try {
+    if (isRecording) stopRecording();
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    liveStream = stream;
+    liveCtx = new (window.AudioContext||window.webkitAudioContext)();
+    liveAnalyser = liveCtx.createAnalyser();
+    liveAnalyser.fftSize = 8192;
+    liveAnalyser.smoothingTimeConstant = 0.6;
+    const source = liveCtx.createMediaStreamSource(stream);
+    source.connect(liveAnalyser);
+    
+    isLiveMonitor = true;
+    document.getElementById('live-monitor').checked = true;
+    document.getElementById('live-status').textContent = 'Monitoring live audio';
+    document.getElementById('live-status').classList.add('ok');
+    document.getElementById('no-rec-time').style.display='none';
+    document.getElementById('no-rec-freq').style.display='none';
+    
+    const timeTag = document.getElementById('rec-time-tag');
+    const freqTag = document.getElementById('rec-freq-tag');
+    timeTag.textContent = 'Live';
+    freqTag.textContent = 'Live';
+    timeTag.className = 'tag tag-live';
+    freqTag.className = 'tag tag-live';
+
+    (function liveLoop() {
+      if (!isLiveMonitor) return;
+      drawLiveTime('rec-canvas-time', liveAnalyser);
+      drawLiveFreq('rec-canvas-freq', liveAnalyser);
+      liveAnim = requestAnimationFrame(liveLoop);
+    })();
+  } catch(e) {
+    document.getElementById('live-status').textContent = 'Microphone access denied';
+  }
+}
+
+function stopLiveMonitor() {
+  cancelAnimationFrame(liveAnim);
+  if (liveStream) {
+    liveStream.getTracks().forEach(t => t.stop());
+    liveStream = null;
+  }
+  if (liveCtx) {
+    liveCtx.close();
+    liveCtx = null;
+  }
+  liveAnalyser = null;
+  isLiveMonitor = false;
+  document.getElementById('live-monitor').checked = false;
+  document.getElementById('live-status').textContent = 'Monitor off';
+  document.getElementById('live-status').classList.remove('ok');
+  
+  const timeTag = document.getElementById('rec-time-tag');
+  const freqTag = document.getElementById('rec-freq-tag');
+  timeTag.textContent = 'Recorded';
+  freqTag.textContent = 'Recorded';
+  timeTag.className = 'tag tag-rec';
+  freqTag.className = 'tag tag-rec';
+  
+  if (!recordedBuffer) {
+    document.getElementById('no-rec-time').style.display='flex';
+    document.getElementById('no-rec-freq').style.display='flex';
+  }
+}
+
 async function toggleRecord() {
   isRecording ? stopRecording() : await startRecording();
 }
 async function startRecording() {
   try {
+    if (isLiveMonitor) stopLiveMonitor();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     recChunks=[]; recordedBlob=null; recordedBuffer=null;
     document.getElementById('pb-btn').disabled=true;
     document.getElementById('pb-stop-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
+
+    const recCtx = new (window.AudioContext||window.webkitAudioContext)();
+    recAnalyser = recCtx.createAnalyser();
+    recAnalyser.fftSize = 8192;
+    recAnalyser.smoothingTimeConstant = 0.6;
+    const micSource = recCtx.createMediaStreamSource(stream);
+    micSource.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
     mediaRecorder.ondataavailable=e=>recChunks.push(e.data);
@@ -699,6 +801,14 @@ async function startRecording() {
     isRecording=true;
     document.getElementById('rec-btn').textContent='⏹ Stop';
     document.getElementById('rec-btn').classList.add('recording');
+    document.getElementById('no-rec-time').style.display='none';
+    document.getElementById('no-rec-freq').style.display='none';
+    const timeTag = document.getElementById('rec-time-tag');
+    const freqTag = document.getElementById('rec-freq-tag');
+    timeTag.textContent = 'Live';
+    freqTag.textContent = 'Live';
+    timeTag.className = 'tag tag-live';
+    freqTag.className = 'tag tag-live';
 
     let rem=parseInt(document.getElementById('rec-duration').value);
     setRecStatus(`🔴 Recording… ${rem}s remaining`);
@@ -707,15 +817,30 @@ async function startRecording() {
       if (rem<=0){clearInterval(recCountdown);stopRecording();}
       else setRecStatus(`🔴 Recording… ${rem}s remaining`);
     },1000);
+
+    (function liveLoop() {
+      if (!isRecording) return;
+      drawLiveTime('rec-canvas-time', recAnalyser);
+      drawLiveFreq('rec-canvas-freq', recAnalyser);
+      recAnim = requestAnimationFrame(liveLoop);
+    })();
   } catch(e) { setRecStatus('⚠️ Microphone access denied'); }
 }
 function stopRecording() {
   clearInterval(recCountdown);
+  cancelAnimationFrame(recAnim);
   if (mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
   mediaRecorder?.stream?.getTracks().forEach(t=>t.stop());
   isRecording=false;
+  recAnalyser = null;
   document.getElementById('rec-btn').textContent='⏺ Record';
   document.getElementById('rec-btn').classList.remove('recording');
+  const timeTag = document.getElementById('rec-time-tag');
+  const freqTag = document.getElementById('rec-freq-tag');
+  timeTag.textContent = 'Recorded';
+  freqTag.textContent = 'Recorded';
+  timeTag.className = 'tag tag-rec';
+  freqTag.className = 'tag tag-rec';
   setRecStatus('Processing…');
 }
 async function processRecording() {
