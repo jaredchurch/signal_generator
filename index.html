@@ -470,7 +470,9 @@ function onFundamentalSliderChange() {
     
     if (p1PresetPlaying) {
       updatePresetOscFreqs();
+      renderHarmonicsList();
     } else {
+      renderHarmonicsList();
       drawP1Graphs();
     }
   }
@@ -588,6 +590,7 @@ function applyPreset(name) {
   else if (name==='triangle') { let s=0; for(let n=1;n<=63&&s<NUM;n+=2){ const f=f0*n; if(f>MAX_FREQ)break; p1Components[s++]={freq:f,amp:1/(n*n)}; } }
 
   if (p1PresetPlaying) { stopP1Unified(); startP1Unified(); }
+  renderHarmonicsList();
   drawP1Graphs();
 }
 function applyNoise(type, silent) {
