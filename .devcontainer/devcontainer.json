@@ -13,8 +13,5 @@
     "vscode": {
       "extensions": []
     }
-  },
-  "mounts": [
-    "source=${local:~}/.config/opencode,target=/home/node/.config/opencode,type=bind"
-  ]
+  }
 }
