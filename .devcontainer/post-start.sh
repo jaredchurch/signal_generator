@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 # Post-start script: runs each time the container starts
 set -e
 
