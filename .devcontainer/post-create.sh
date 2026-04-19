@@ -3,7 +3,7 @@
 set -e
 
 # Install opencode CLI
-# curl -fsSL https://opencode.ai/install | bash
+curl -fsSL https://opencode.ai/install | bash
 
 # Configure opencode with the big-pickle model
 # mkdir -p ~/.config/opencode
