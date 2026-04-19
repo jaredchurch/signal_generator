@@ -130,6 +130,34 @@
     .collapsible-toggle { font-size:.7rem; color:var(--muted); transition:transform .2s; }
     .collapsible-content { overflow:hidden; transition:max-height .3s ease-out; }
     .collapsible-content.collapsed { max-height:0 !important; }
+
+    /* ── Tuner ── */
+    .tuner-gauge { width:200px; height:200px; position:relative; margin:0 auto; }
+    .tuner-needle { position:absolute; width:4px; height:90px; background:#f87171; left:50%; bottom:50%; transform-origin:bottom center; border-radius:2px; transition:transform .08s ease-out; }
+    .tuner-center { position:absolute; width:12px; height:12px; background:var(--green); border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); }
+    .tuner-note { font-size:2.5rem; font-weight:800; }
+    .tuner-freq { font-size:1rem; color:var(--muted); }
+    .tuner-cents { font-size:1.2rem; font-weight:700; }
+    .tuner-indicator { font-size:.85rem; font-weight:700; padding:4px 14px; border-radius:20px; }
+    .tuner-indicator.high { background:rgba(248,113,113,.2); color:var(--red); }
+    .tuner-indicator.low { background:rgba(108,138,255,.2); color:var(--accent); }
+    .tuner-indicator.in-tune { background:rgba(34,197,94,.2); color:var(--green); }
+    .tuner-off { background:rgba(100,116,139,.2); color:var(--muted); }
+    @keyframes needle-shake { 0%,100%{transform:rotate(0);} 25%{transform:rotate(-3deg);} 75%{transform:rotate(3deg);} }
+    .tuner-needle.shaking { animation:needle-shake .15s infinite; }
+
+    /* ── Metronome ── */
+    .metro-visual-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:800px){ .metro-visual-row { grid-template-columns:1fr; } }
+    .metro-pendulum-wrap { width:140px; height:200px; margin:0 auto; position:relative; background:var(--card2); border-radius:8px; overflow:hidden; }
+    .metro-pendulum { position:absolute; width:6px; height:140px; background:linear-gradient(to bottom, var(--accent), var(--accent2)); left:50%; top:20px; transform-origin:top center; border-radius:3px; }
+    .metro-pivot { position:absolute; top:16px; left:50%; transform:translateX(-50%); width:16px; height:16px; background:var(--border); border-radius:50%; }
+    .metro-weight { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:20px; height:20px; background:var(--accent); border-radius:50%; }
+    .metro-level-wrap { width:60px; height:200px; margin:0 auto; background:var(--card2); border-radius:8px; position:relative; overflow:hidden; display:flex; flex-direction:column-reverse; padding:8px 6px; gap:3px; }
+    .metro-led { flex:1; border-radius:2px; background:var(--border); opacity:0.3; transition:opacity .05s, background .05s; }
+    .metro-led.on.green { background:var(--green); opacity:1; box-shadow:0 0 6px var(--green); }
+    .metro-led.on.yellow { background:#fbbf24; opacity:1; box-shadow:0 0 6px #fbbf24; }
+    .metro-led.on.red { background:#ef4444; opacity:1; box-shadow:0 0 6px #ef4444; }
   </style>
 </head>
 <body>
@@ -143,6 +171,8 @@
 <div class="tab-bar">
   <button class="tab active" onclick="showTab('page-presets')">🎵 Signal Generator</button>
   <button class="tab"        onclick="showTab('page-recorder')">🎙️ Audio Recorder</button>
+  <button class="tab"        onclick="showTab('page-tuner')">🎸 Tuner</button>
+  <button class="tab"        onclick="showTab('page-metronome')">🎚️ Metronome</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -365,6 +395,154 @@
           <div class="no-data" id="no-rec-freq">Record audio to see spectrum</div>
         </div>
 
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 4 — TUNER
+══════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-tuner">
+  <div class="cols cols-left-right">
+
+    <!-- Left: controls + gauge -->
+    <div class="flex-col">
+      <div class="card">
+        <h2>Target Note</h2>
+        <div class="flex-row" style="margin-bottom:12px;">
+          <select class="styled" id="tuner-note-select" onchange="onTunerNoteSelect()"><option value="">— pick note —</option></select>
+          <select class="styled" id="tuner-octave-select" onchange="onTunerNoteSelect()">
+            <option value="0">Oct 0</option><option value="1">Oct 1</option><option value="2">Oct 2</option>
+            <option value="3">Oct 3</option><option value="4" selected>Oct 4</option><option value="5">Oct 5</option>
+            <option value="6">Oct 6</option><option value="7">Oct 7</option><option value="8">Oct 8</option>
+          </select>
+          <button class="btn btn-sm" onclick="setTunerMiddleC()" style="background:var(--card2);border:1.5px solid var(--accent);color:var(--accent);">Middle C</button>
+        </div>
+        <div class="flex-row" style="justify-content:center;gap:20px;">
+          <div style="text-align:center;">
+            <div class="tuner-note" id="tuner-display-note">—</div>
+            <div class="tuner-freq" id="tuner-display-freq">—</div>
+          </div>
+          <div style="text-align:center;">
+            <div class="tuner-cents" id="tuner-display-cents">—</div>
+            <div id="tuner-indicator" class="tuner-indicator tuner-off">OFF</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:10px;position:relative;">
+          <div class="tuner-gauge">
+            <div class="tuner-needle" id="tuner-needle"></div>
+            <div class="tuner-center"></div>
+          </div>
+          <div style="margin-top:8px;font-size:.7rem;color:var(--muted);">
+            ◀ <span style="color:var(--accent);">-50¢</span> │ <span style="color:var(--green);">0¢</span> │ <span style="color:var(--red);">+50¢</span> ▶
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Microphone Input</h2>
+        <div class="flex-row" style="margin-bottom:12px;">
+          <button class="btn btn-primary" id="tuner-start-btn" onclick="toggleTuner()">▶ Start Tuner</button>
+        </div>
+        <div class="rec-status" id="tuner-status">Press Start to begin</div>
+      </div>
+    </div>
+
+    <!-- Right: spectrum analyser -->
+    <div>
+      <div class="card">
+        <h2>Tuner <span class="tag tag-live" id="tuner-live-tag" style="display:none;">Live</span> <span style="font-size:.65rem;color:var(--muted);">0 – 8 kHz</span></h2>
+        <div class="graph-wrap">
+          <h3>Waveform <span class="tag tag-live" id="tuner-time-tag" style="display:none;">Live</span></h3>
+          <canvas id="tuner-canvas-time"></canvas>
+          <div class="no-data" id="tuner-no-time">Start tuner to see waveform</div>
+        </div>
+        <div class="graph-wrap">
+          <h3>Spectrum Analyser <span class="tag tag-live" id="tuner-freq-tag" style="display:none;">Live</span></h3>
+          <canvas id="tuner-canvas-freq"></canvas>
+          <div class="no-data" id="tuner-no-freq">Start tuner to see spectrum</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 5 — METRONOME
+══════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-metronome">
+  <div class="cols cols-left-right">
+
+    <!-- Left: controls -->
+    <div class="flex-col">
+      <div class="card">
+        <h2>Tempo</h2>
+        <div class="flex-row" style="margin-bottom:12px;">
+          <input type="range" id="metro-bpm" min="40" max="240" value="120" oninput="onMetroBpmChange()" style="flex:1;"/>
+          <span id="metro-bpm-display" style="font-size:1.5rem;font-weight:800;min-width:70px;text-align:right;">120</span>
+          <span style="color:var(--muted);">BPM</span>
+        </div>
+        <div class="presets" style="margin-bottom:12px;">
+          <button class="preset-btn" onclick="setMetroPreset(40)">40</button>
+          <button class="preset-btn" onclick="setMetroPreset(60)">60</button>
+          <button class="preset-btn" onclick="setMetroPreset(80)">80</button>
+          <button class="preset-btn" onclick="setMetroPreset(100)">100</button>
+          <button class="preset-btn active" onclick="setMetroPreset(120)">120</button>
+          <button class="preset-btn" onclick="setMetroPreset(140)">140</button>
+          <button class="preset-btn" onclick="setMetroPreset(160)">160</button>
+          <button class="preset-btn" onclick="setMetroPreset(180)">180</button>
+          <button class="preset-btn" onclick="setMetroPreset(200)">200</button>
+          <button class="preset-btn" onclick="setMetroPreset(220)">220</button>
+        </div>
+        <div class="flex-row">
+          <button class="btn btn-primary" id="metro-play-btn" onclick="toggleMetronome()" style="flex:1;">▶ Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: visualisations -->
+    <div>
+      <div class="card">
+        <h2>Visualisations</h2>
+        <div class="metro-visual-row">
+          <div>
+            <h3 style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;text-align:center;">Pendulum</h3>
+            <div class="metro-pendulum-wrap">
+              <div class="metro-pendulum" id="metro-pendulum">
+                <div class="metro-weight"></div>
+              </div>
+              <div class="metro-pivot"></div>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;text-align:center;">Level</h3>
+            <div class="metro-level-wrap" id="metro-leds">
+              <div class="metro-led" data-i="0"></div>
+              <div class="metro-led" data-i="1"></div>
+              <div class="metro-led" data-i="2"></div>
+              <div class="metro-led" data-i="3"></div>
+              <div class="metro-led" data-i="4"></div>
+              <div class="metro-led" data-i="5"></div>
+              <div class="metro-led" data-i="6"></div>
+              <div class="metro-led" data-i="7"></div>
+              <div class="metro-led" data-i="8"></div>
+              <div class="metro-led" data-i="9"></div>
+              <div class="metro-led" data-i="10"></div>
+              <div class="metro-led" data-i="11"></div>
+              <div class="metro-led" data-i="12"></div>
+              <div class="metro-led" data-i="13"></div>
+              <div class="metro-led" data-i="14"></div>
+              <div class="metro-led" data-i="15"></div>
+              <div class="metro-led" data-i="16"></div>
+              <div class="metro-led" data-i="17"></div>
+              <div class="metro-led" data-i="18"></div>
+              <div class="metro-led" data-i="19"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1003,6 +1181,413 @@ function drawRecordedFreq(data, sampleRate) {
 }
 
 // ════════════════════════════════════════════════════════
+// PAGE 4 — TUNER
+// ════════════════════════════════════════════════════════
+let tunerActive = false;
+let tunerStream = null;
+let tunerAudioCtx = null;
+let tunerAnalyser = null;
+let tunerAnim = null;
+let tunerTargetFreq = 0;
+const TUNER_FFT_SIZE = 8192;
+const TUNER_SAMPLE_RATE = 44100;
+
+function initTuner() {
+  const sel = document.getElementById('tuner-note-select');
+  NOTE_NAMES.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+}
+
+function onTunerNoteSelect() {
+  const note = document.getElementById('tuner-note-select').value;
+  const oct  = document.getElementById('tuner-octave-select').value;
+  const lblNote = document.getElementById('tuner-display-note');
+  const lblFreq = document.getElementById('tuner-display-freq');
+  if (!note) {
+    tunerTargetFreq = 0;
+    lblNote.textContent = '—';
+    lblFreq.textContent = '—';
+  } else {
+    tunerTargetFreq = noteToFreq(note, oct);
+    lblNote.textContent = note + oct;
+    lblFreq.textContent = tunerTargetFreq >= 1000 ? `${(tunerTargetFreq/1000).toFixed(3)} kHz` : `${tunerTargetFreq.toFixed(1)} Hz`;
+  }
+}
+
+function setTunerMiddleC() {
+  document.getElementById('tuner-note-select').value = 'C';
+  document.getElementById('tuner-octave-select').value = '4';
+  onTunerNoteSelect();
+}
+
+async function toggleTuner() {
+  tunerActive ? stopTuner() : await startTuner();
+}
+
+async function startTuner() {
+  if (!tunerTargetFreq) {
+    document.getElementById('tuner-status').textContent = 'Select a target note first';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
+    tunerStream = stream;
+    tunerAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    tunerAnalyser = tunerAudioCtx.createAnalyser();
+    tunerAnalyser.fftSize = TUNER_FFT_SIZE;
+    tunerAnalyser.smoothingTimeConstant = 0.8;
+    const source = tunerAudioCtx.createMediaStreamSource(stream);
+    source.connect(tunerAnalyser);
+
+    tunerActive = true;
+    document.getElementById('tuner-start-btn').textContent = '⏹ Stop Tuner';
+    document.getElementById('tuner-status').textContent = 'Listening...';
+    document.getElementById('tuner-status').classList.add('ok');
+    document.getElementById('tuner-no-time').style.display = 'none';
+    document.getElementById('tuner-no-freq').style.display = 'none';
+    document.getElementById('tuner-live-tag').style.display = 'inline-block';
+    document.getElementById('tuner-time-tag').style.display = 'inline-block';
+    document.getElementById('tuner-freq-tag').style.display = 'inline-block';
+
+    (function tunerLoop() {
+      if (!tunerActive) return;
+      processTunerData();
+      drawLiveTime('tuner-canvas-time', tunerAnalyser);
+      drawTunerFreq();
+      tunerAnim = requestAnimationFrame(tunerLoop);
+    })();
+  } catch(e) {
+    document.getElementById('tuner-status').textContent = 'Microphone access denied';
+  }
+}
+
+function stopTuner() {
+  cancelAnimationFrame(tunerAnim);
+  if (tunerStream) {
+    tunerStream.getTracks().forEach(t => t.stop());
+    tunerStream = null;
+  }
+  if (tunerAudioCtx) {
+    tunerAudioCtx.close();
+    tunerAudioCtx = null;
+  }
+  tunerAnalyser = null;
+  tunerActive = false;
+  document.getElementById('tuner-start-btn').textContent = '▶ Start Tuner';
+  document.getElementById('tuner-status').textContent = 'Press Start to begin';
+  document.getElementById('tuner-status').classList.remove('ok');
+  document.getElementById('tuner-live-tag').style.display = 'none';
+  document.getElementById('tuner-time-tag').style.display = 'none';
+  document.getElementById('tuner-freq-tag').style.display = 'none';
+  document.getElementById('tuner-no-time').style.display = 'flex';
+  document.getElementById('tuner-no-freq').style.display = 'flex';
+  resetTunerDisplay();
+}
+
+function resetTunerDisplay() {
+  const needle = document.getElementById('tuner-needle');
+  needle.style.transform = 'rotate(0deg)';
+  needle.classList.remove('shaking');
+  document.getElementById('tuner-display-cents').textContent = '—';
+  document.getElementById('tuner-indicator').textContent = 'OFF';
+  document.getElementById('tuner-indicator').className = 'tuner-indicator tuner-off';
+}
+
+function processTunerData() {
+  if (!tunerAnalyser || !tunerTargetFreq) return;
+
+  const bufLen = tunerAnalyser.frequencyBinCount;
+  const data = new Float32Array(bufLen);
+  tunerAnalyser.getFloatTimeDomainData(data);
+
+  // Detect pitch using autocorrelation
+  const detectedFreq = detectPitchAutoCorr(data, TUNER_SAMPLE_RATE, 50, 2000);
+  const centsLabel = document.getElementById('tuner-display-cents');
+  const indicator = document.getElementById('tuner-indicator');
+  const needle = document.getElementById('tuner-needle');
+
+  if (!detectedFreq || detectedFreq < 30 || detectedFreq > 5000 || !isStablePitch(data)) {
+    centsLabel.textContent = '—';
+    indicator.textContent = 'NO pitch';
+    indicator.className = 'tuner-indicator tuner-off';
+    needle.style.transform = 'rotate(0deg)';
+    needle.classList.add('shaking');
+    return;
+  }
+
+  const cents = Math.round(1200 * Math.log2(detectedFreq / tunerTargetFreq));
+  centsLabel.textContent = (cents > 0 ? '+' : '') + cents + '¢';
+
+  if (Math.abs(cents) <= 5) {
+    indicator.textContent = 'IN TUNE';
+    indicator.className = 'tuner-indicator in-tune';
+  } else if (cents > 0) {
+    indicator.textContent = 'TOO HIGH';
+    indicator.className = 'tuner-indicator high';
+  } else {
+    indicator.textContent = 'TOO LOW';
+    indicator.className = 'tuner-indicator low';
+  }
+
+  const angle = Math.max(-50, Math.min(50, cents));
+  needle.style.transform = `rotate(${angle}deg)`;
+  needle.classList.remove('shaking');
+}
+
+function detectPitchAutoCorr(data, sampleRate, minFreq, maxFreq) {
+  const n = data.length;
+  const minLag = Math.floor(sampleRate / maxFreq);
+  const maxLag = Math.floor(sampleRate / minFreq);
+
+  let bestCorr = 0;
+  let bestLag = 0;
+
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let corr = 0;
+    let norm = 0;
+    for (let i = 0; i < n - lag; i++) {
+      corr += data[i] * data[i + lag];
+      norm += data[i] * data[i] + data[i + lag] * data[i + lag];
+    }
+    if (norm === 0) continue;
+    corr /= norm / 2;
+    if (corr > bestCorr) {
+      bestCorr = corr;
+      bestLag = lag;
+    }
+  }
+
+  if (bestCorr < 0.1 || bestLag === 0) return 0;
+  return sampleRate / bestLag;
+}
+
+function isStablePitch(data) {
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += Math.abs(data[i]);
+  return (sum / data.length) > 0.01;
+}
+
+function drawTunerFreq() {
+  if (!tunerAnalyser) return;
+  const canvas = document.getElementById('tuner-canvas-freq');
+  const ctx = setupCanvas(canvas);
+  const {W, H} = dims(canvas);
+
+  const bufLen = tunerAnalyser.frequencyBinCount;
+  const freqData = new Uint8Array(bufLen);
+  tunerAnalyser.getByteFrequencyData(freqData);
+  const sampleRate = TUNER_SAMPLE_RATE;
+
+  drawGrid(ctx, W, H);
+
+  const maxDisplay = 8000;
+  const MIN_FREQ_LOG = 20;
+  const padX = 40;
+  const padBot = 22;
+  const usableW = W - padX - 10;
+
+  let maxVal = 0;
+  for (let i = 0; i < freqData.length; i++) if (freqData[i] > maxVal) maxVal = freqData[i];
+  if (maxVal === 0) maxVal = 255;
+
+  const numBars = 200;
+  for (let i = 0; i < numBars; i++) {
+    const frac = i / numBars;
+    const freq = MIN_FREQ_LOG * Math.pow(maxDisplay / MIN_FREQ_LOG, frac);
+    const bin = Math.floor((freq / (sampleRate / 2)) * freqData.length);
+    if (bin >= freqData.length) break;
+    const x = padX + frac * usableW;
+    const barH = (freqData[bin] / maxVal) * (H - padBot - 5);
+    const isTargetBin = tunerTargetFreq && Math.abs(freq - tunerTargetFreq) < maxDisplay * 0.03;
+    const hue = isTargetBin ? 140 : 200 + (freqData[bin] / 255) * 60;
+    ctx.fillStyle = isTargetBin ? `rgba(52, 211, 153, .8)` : `hsl(${hue}, 80%, 60%)`;
+    const barW = Math.max(1, (1 / numBars) * usableW - 1);
+    ctx.fillRect(x, H - padBot - barH, barW, barH);
+  }
+
+  // Draw target marker if set
+  if (tunerTargetFreq && tunerTargetFreq <= maxDisplay) {
+    const targetFrac = Math.log(tunerTargetFreq / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG);
+    const targetX = padX + targetFrac * usableW;
+    ctx.strokeStyle = '#34d399';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(targetX, 0);
+    ctx.lineTo(targetX, H - padBot);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.strokeStyle = '#2e3250';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padX, H - padBot);
+  ctx.lineTo(W, H - padBot);
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px Segoe UI';
+  ctx.textAlign = 'center';
+  [50, 100, 200, 500, 1000, 2000, 4000, 8000].forEach(f => {
+    if (f > maxDisplay) return;
+    const x = padX + (Math.log(f / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG)) * usableW;
+    ctx.fillText(f >= 1000 ? `${f/1000}k` : f, x, H - 5);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// PAGE 5 — METRONOME
+// ════════════════════════════════════════════════════════
+let metroPlaying = false;
+let metroAudioCtx = null;
+let metroOsc = null;
+let metroGain = null;
+let metroInterval = null;
+let metroBpm = 120;
+let metroPulseDir = 1;
+let metroStartTime = 0;
+const CLICK_FREQ = 1000;
+const CLICK_DUR = 0.03;
+
+function onMetroBpmChange() {
+  metroBpm = parseInt(document.getElementById('metro-bpm').value);
+  document.getElementById('metro-bpm-display').textContent = metroBpm;
+  updateMetroInterval();
+}
+
+function setMetroPreset(bpm) {
+  document.getElementById('metro-bpm').value = bpm;
+  onMetroBpmChange();
+  document.querySelectorAll('.presets .preset-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === bpm);
+  });
+}
+
+function updateMetroInterval() {
+  if (!metroPlaying) return;
+  clearInterval(metroInterval);
+  const intervalMs = 60000 / metroBpm;
+  metroLastTick = performance.now();
+  metroInterval = setInterval(metroTick, intervalMs);
+}
+
+function toggleMetronome() {
+  metroPlaying ? stopMetronome() : startMetronome();
+}
+
+function startMetronome() {
+  ensureAudioCtx();
+  metroAudioCtx = audioCtx;
+  metroGain = metroAudioCtx.createGain();
+  metroGain.gain.value = 0.3;
+  metroGain.connect(metroAudioCtx.destination);
+
+  metroPlaying = true;
+  metroStartTime = performance.now();
+  document.getElementById('metro-play-btn').textContent = '⏹ Stop';
+  updateMetroInterval();
+  animatePendulum();
+  animateLevel();
+}
+
+function stopMetronome() {
+  clearInterval(metroInterval);
+  metroPlaying = false;
+  document.getElementById('metro-play-btn').textContent = '▶ Start';
+  resetMetroVisuals();
+}
+
+function playClick() {
+  const osc = metroAudioCtx.createOscillator();
+  const g = metroAudioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = CLICK_FREQ;
+  g.gain.setValueAtTime(0.4, metroAudioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, metroAudioCtx.currentTime + CLICK_DUR);
+  osc.connect(g);
+  g.connect(metroGain);
+  osc.start();
+  osc.stop(metroAudioCtx.currentTime + CLICK_DUR);
+}
+
+function metroTick() {
+  playClick();
+}
+
+let intervalMs = 0;
+
+let metroPendulumStart = 0;
+let metroPendulumAnimId = null;
+
+function animatePendulum() {
+  cancelAnimationFrame(metroPendulumAnimId);
+  const pendulum = document.getElementById('metro-pendulum');
+  const maxAngle = 35;
+
+  function tick(now) {
+    if (!metroPlaying) return;
+    const intervalMs = 60000 / metroBpm;
+    const elapsed = now - metroStartTime;
+    const swing = Math.floor(elapsed / intervalMs);
+    const frac = (elapsed % intervalMs) / intervalMs;
+    const goingRight = swing % 2 === 0;
+    const angle = goingRight
+      ? -maxAngle + frac * maxAngle * 2
+      : maxAngle - frac * maxAngle * 2;
+    pendulum.style.transform = 'rotate(' + angle + 'deg)';
+    metroPendulumAnimId = requestAnimationFrame(tick);
+  }
+
+  metroPendulumAnimId = requestAnimationFrame(tick);
+}
+
+let metroLevelAnimId = null;
+
+function animateLevel() {
+  cancelAnimationFrame(metroLevelAnimId);
+  const leds = document.querySelectorAll('.metro-led');
+  const maxLeds = leds.length;
+
+  function tick(now) {
+    if (!metroPlaying) return;
+    const intervalMs = 60000 / metroBpm;
+    const elapsed = now - metroStartTime;
+    const progress = elapsed % intervalMs;
+    let level;
+    if (progress < 30) {
+      level = maxLeds;
+    } else {
+      level = maxLeds * Math.exp(-(progress - 30) / (intervalMs * 0.4));
+    }
+
+    leds.forEach(function(led, i) {
+      led.classList.remove('on', 'green', 'yellow', 'red');
+      if (i < level) {
+        let color = 'green';
+        if (i >= leds.length * 0.8) color = 'red';
+        else if (i >= leds.length * 0.6) color = 'yellow';
+        led.classList.add('on', color);
+      }
+    });
+
+    metroLevelAnimId = requestAnimationFrame(tick);
+  }
+
+  metroLevelAnimId = requestAnimationFrame(tick);
+}
+
+function resetMetroVisuals() {
+  const pendulum = document.getElementById('metro-pendulum');
+  cancelAnimationFrame(metroPendulumAnimId);
+  cancelAnimationFrame(metroLevelAnimId);
+  pendulum.style.transform = 'rotate(0deg)';
+  document.querySelectorAll('.metro-led').forEach(led => {
+    led.classList.remove('on', 'green', 'yellow', 'red');
+  });
+  metroPulseDir = 1;
+}
+
+// ════════════════════════════════════════════════════════
 // SHARED DRAWING
 // ════════════════════════════════════════════════════════
 
@@ -1218,7 +1803,7 @@ function showTab(pageId) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  const idx = ['page-presets','page-recorder'].indexOf(pageId);
+  const idx = ['page-presets','page-recorder','page-tuner','page-metronome'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   localStorage.setItem('activeTab', pageId);
   // Redraw static graphs for the activated page
@@ -1238,11 +1823,12 @@ window.addEventListener('resize', ()=>{
 
 // Restore active tab from localStorage
 const savedTab = localStorage.getItem('activeTab');
-if (savedTab && ['page-presets','page-recorder'].includes(savedTab)) {
+if (savedTab && ['page-presets','page-recorder','page-tuner','page-metronome'].includes(savedTab)) {
   showTab(savedTab);
 }
 
 initP1();
+initTuner();
 </script>
 </body>
 </html>
