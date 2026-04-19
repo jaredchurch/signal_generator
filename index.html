@@ -158,6 +158,12 @@
     .metro-led.on.green { background:var(--green); opacity:1; box-shadow:0 0 6px var(--green); }
     .metro-led.on.yellow { background:#fbbf24; opacity:1; box-shadow:0 0 6px #fbbf24; }
     .metro-led.on.red { background:#ef4444; opacity:1; box-shadow:0 0 6px #ef4444; }
+
+    /* ── Synth Pad ── */
+    .pad-key-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+    .pad-key-btn { padding:12px 8px; border:1.5px solid var(--border); border-radius:10px; background:var(--card2); color:var(--text); font-size:1.1rem; font-weight:700; cursor:pointer; transition:border-color .2s,background .2s; }
+    .pad-key-btn:hover { border-color:var(--accent); background:#2a2f4a; }
+    .pad-key-btn.active { border-color:var(--accent); background:rgba(108,138,255,.2); color:var(--accent); }
   </style>
 </head>
 <body>
@@ -173,6 +179,7 @@
   <button class="tab"        onclick="showTab('page-recorder')">🎙️ Audio Recorder</button>
   <button class="tab"        onclick="showTab('page-tuner')">🎸 Tuner</button>
   <button class="tab"        onclick="showTab('page-metronome')">🎚️ Metronome</button>
+  <button class="tab"        onclick="showTab('page-pads')">🎹 Synth Pads</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -542,6 +549,48 @@
               <div class="metro-led" data-i="19"></div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 6 — SYNTH PADS
+══════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-pads">
+  <div class="cols cols-left-right">
+
+    <!-- Left: controls -->
+    <div class="flex-col">
+      <div class="card">
+        <h2>Key</h2>
+        <div class="pad-key-grid" id="pad-key-grid"></div>
+        <p style="font-size:.75rem;color:var(--muted);margin-top:8px;">FIXED IN OCTAVE 4 — NEEDS WORK</p>
+      </div>
+
+      <div class="card">
+        <h2>Volume</h2>
+        <div class="vol-row">
+          <input type="range" id="pad-volume" min="0" max="1" step="0.01" value="0.3" oninput="onPadVolumeChange()"/>
+          <span id="pad-vol-label">30%</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-row">
+          <button class="btn btn-primary" id="pad-play-btn" onclick="togglePad()" style="flex:1;">▶ Play</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: visual -->
+    <div>
+      <div class="card">
+        <h2>Visualisation</h2>
+        <div class="graph-wrap">
+          <canvas id="pad-canvas-freq"></canvas>
         </div>
       </div>
     </div>
@@ -1588,6 +1637,110 @@ function resetMetroVisuals() {
 }
 
 // ════════════════════════════════════════════════════════
+// PAGE 6 — SYNTH PADS
+// ════════════════════════════════════════════════════════
+let padPlaying = false;
+let padAudioCtx = null;
+let padOscs = [];
+let padGain = null;
+let padAnalyser = null;
+let padAnim = null;
+const PAD_OCTAVE = 4;
+
+function initPads() {
+  const grid = document.getElementById('pad-key-grid');
+  NOTE_NAMES.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'pad-key-btn';
+    btn.textContent = n;
+    btn.dataset.key = n;
+    btn.onclick = () => setPadKey(n);
+    grid.appendChild(btn);
+  });
+  setPadKey('C');
+}
+
+function setPadKey(key) {
+  padKey = key;
+  document.querySelectorAll('.pad-key-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.key === key);
+  });
+  if (padPlaying) {
+    startPads();
+  }
+}
+
+function onPadVolumeChange() {
+  const v = parseFloat(document.getElementById('pad-volume').value);
+  document.getElementById('pad-vol-label').textContent = Math.round(v * 100) + '%';
+  if (padGain) padGain.gain.value = v;
+}
+
+function togglePad() {
+  padPlaying ? stopPads() : startPads();
+}
+
+function startPads() {
+  ensureAudioCtx();
+  padAudioCtx = audioCtx;
+  stopPads();
+
+  const baseFreq = noteToFreq(padKey, PAD_OCTAVE);
+  const vol = parseFloat(document.getElementById('pad-volume').value);
+
+  padAnalyser = padAudioCtx.createAnalyser();
+  padAnalyser.fftSize = 2048;
+
+  // Soft ambient: sine waves with gentle filter
+  const notes = [0, 4, 7, 12, 16, 19, 24, 28];
+
+  notes.forEach(semitone => {
+    const freq = baseFreq * Math.pow(2, semitone / 12);
+    if (freq < 6000) {
+      const osc = padAudioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const gain = padAudioCtx.createGain();
+      gain.gain.setValueAtTime(0, padAudioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(vol / notes.length, padAudioCtx.currentTime + 0.5);
+
+      // Very gentle low-pass filter
+      const filter = padAudioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1200;
+      filter.Q.value = 0.5;
+
+      osc.connect(gain);
+      gain.connect(filter);
+      filter.connect(padAnalyser);
+      padAnalyser.connect(padAudioCtx.destination);
+      osc.start();
+      padOscs.push({ osc, gain, filter });
+    }
+  });
+
+  padPlaying = true;
+  document.getElementById('pad-play-btn').textContent = '⏹ Stop';
+
+  (function loop() {
+    if (!padPlaying) return;
+    drawLiveFreq('pad-canvas-freq', padAnalyser);
+    padAnim = requestAnimationFrame(loop);
+  })();
+}
+
+function stopPads() {
+  cancelAnimationFrame(padAnim);
+  padOscs.forEach(o => {
+    try { o.osc.stop(); } catch (e) { }
+  });
+  padOscs = [];
+  padPlaying = false;
+  document.getElementById('pad-play-btn').textContent = '▶ Play';
+}
+
+// ════════════════════════════════════════════════════════
 // SHARED DRAWING
 // ════════════════════════════════════════════════════════
 
@@ -1803,7 +1956,7 @@ function showTab(pageId) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  const idx = ['page-presets','page-recorder','page-tuner','page-metronome'].indexOf(pageId);
+  const idx = ['page-presets','page-recorder','page-tuner','page-metronome','page-pads'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   localStorage.setItem('activeTab', pageId);
   // Redraw static graphs for the activated page
@@ -1823,12 +1976,13 @@ window.addEventListener('resize', ()=>{
 
 // Restore active tab from localStorage
 const savedTab = localStorage.getItem('activeTab');
-if (savedTab && ['page-presets','page-recorder','page-tuner','page-metronome'].includes(savedTab)) {
+if (savedTab && ['page-presets','page-recorder','page-tuner','page-metronome','page-pads'].includes(savedTab)) {
   showTab(savedTab);
 }
 
 initP1();
 initTuner();
+initPads();
 </script>
 </body>
 </html>
