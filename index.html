@@ -145,6 +145,19 @@
     .tuner-off { background:rgba(100,116,139,.2); color:var(--muted); }
     @keyframes needle-shake { 0%,100%{transform:rotate(0);} 25%{transform:rotate(-3deg);} 75%{transform:rotate(3deg);} }
     .tuner-needle.shaking { animation:needle-shake .15s infinite; }
+
+    /* ── Metronome ── */
+    .metro-visual-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media(max-width:800px){ .metro-visual-row { grid-template-columns:1fr; } }
+    .metro-pendulum-wrap { width:140px; height:200px; margin:0 auto; position:relative; background:var(--card2); border-radius:8px; overflow:hidden; }
+    .metro-pendulum { position:absolute; width:6px; height:140px; background:linear-gradient(to bottom, var(--accent), var(--accent2)); left:50%; top:20px; transform-origin:top center; border-radius:3px; }
+    .metro-pivot { position:absolute; top:16px; left:50%; transform:translateX(-50%); width:16px; height:16px; background:var(--border); border-radius:50%; }
+    .metro-weight { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:20px; height:20px; background:var(--accent); border-radius:50%; }
+    .metro-level-wrap { width:60px; height:200px; margin:0 auto; background:var(--card2); border-radius:8px; position:relative; overflow:hidden; display:flex; flex-direction:column-reverse; padding:8px 6px; gap:3px; }
+    .metro-led { flex:1; border-radius:2px; background:var(--border); opacity:0.3; transition:opacity .05s, background .05s; }
+    .metro-led.on.green { background:var(--green); opacity:1; box-shadow:0 0 6px var(--green); }
+    .metro-led.on.yellow { background:#fbbf24; opacity:1; box-shadow:0 0 6px #fbbf24; }
+    .metro-led.on.red { background:#ef4444; opacity:1; box-shadow:0 0 6px #ef4444; }
   </style>
 </head>
 <body>
@@ -159,6 +172,7 @@
   <button class="tab active" onclick="showTab('page-presets')">🎵 Signal Generator</button>
   <button class="tab"        onclick="showTab('page-recorder')">🎙️ Audio Recorder</button>
   <button class="tab"        onclick="showTab('page-tuner')">🎸 Tuner</button>
+  <button class="tab"        onclick="showTab('page-metronome')">🎚️ Metronome</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -449,6 +463,85 @@
           <h3>Spectrum Analyser <span class="tag tag-live" id="tuner-freq-tag" style="display:none;">Live</span></h3>
           <canvas id="tuner-canvas-freq"></canvas>
           <div class="no-data" id="tuner-no-freq">Start tuner to see spectrum</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     PAGE 5 — METRONOME
+══════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-metronome">
+  <div class="cols cols-left-right">
+
+    <!-- Left: controls -->
+    <div class="flex-col">
+      <div class="card">
+        <h2>Tempo</h2>
+        <div class="flex-row" style="margin-bottom:12px;">
+          <input type="range" id="metro-bpm" min="40" max="240" value="120" oninput="onMetroBpmChange()" style="flex:1;"/>
+          <span id="metro-bpm-display" style="font-size:1.5rem;font-weight:800;min-width:70px;text-align:right;">120</span>
+          <span style="color:var(--muted);">BPM</span>
+        </div>
+        <div class="presets" style="margin-bottom:12px;">
+          <button class="preset-btn" onclick="setMetroPreset(40)">40</button>
+          <button class="preset-btn" onclick="setMetroPreset(60)">60</button>
+          <button class="preset-btn" onclick="setMetroPreset(80)">80</button>
+          <button class="preset-btn" onclick="setMetroPreset(100)">100</button>
+          <button class="preset-btn active" onclick="setMetroPreset(120)">120</button>
+          <button class="preset-btn" onclick="setMetroPreset(140)">140</button>
+          <button class="preset-btn" onclick="setMetroPreset(160)">160</button>
+          <button class="preset-btn" onclick="setMetroPreset(180)">180</button>
+          <button class="preset-btn" onclick="setMetroPreset(200)">200</button>
+          <button class="preset-btn" onclick="setMetroPreset(220)">220</button>
+        </div>
+        <div class="flex-row">
+          <button class="btn btn-primary" id="metro-play-btn" onclick="toggleMetronome()" style="flex:1;">▶ Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: visualisations -->
+    <div>
+      <div class="card">
+        <h2>Visualisations</h2>
+        <div class="metro-visual-row">
+          <div>
+            <h3 style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;text-align:center;">Pendulum</h3>
+            <div class="metro-pendulum-wrap">
+              <div class="metro-pendulum" id="metro-pendulum">
+                <div class="metro-weight"></div>
+              </div>
+              <div class="metro-pivot"></div>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;text-align:center;">Level</h3>
+            <div class="metro-level-wrap" id="metro-leds">
+              <div class="metro-led" data-i="0"></div>
+              <div class="metro-led" data-i="1"></div>
+              <div class="metro-led" data-i="2"></div>
+              <div class="metro-led" data-i="3"></div>
+              <div class="metro-led" data-i="4"></div>
+              <div class="metro-led" data-i="5"></div>
+              <div class="metro-led" data-i="6"></div>
+              <div class="metro-led" data-i="7"></div>
+              <div class="metro-led" data-i="8"></div>
+              <div class="metro-led" data-i="9"></div>
+              <div class="metro-led" data-i="10"></div>
+              <div class="metro-led" data-i="11"></div>
+              <div class="metro-led" data-i="12"></div>
+              <div class="metro-led" data-i="13"></div>
+              <div class="metro-led" data-i="14"></div>
+              <div class="metro-led" data-i="15"></div>
+              <div class="metro-led" data-i="16"></div>
+              <div class="metro-led" data-i="17"></div>
+              <div class="metro-led" data-i="18"></div>
+              <div class="metro-led" data-i="19"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1343,6 +1436,158 @@ function drawTunerFreq() {
 }
 
 // ════════════════════════════════════════════════════════
+// PAGE 5 — METRONOME
+// ════════════════════════════════════════════════════════
+let metroPlaying = false;
+let metroAudioCtx = null;
+let metroOsc = null;
+let metroGain = null;
+let metroInterval = null;
+let metroBpm = 120;
+let metroPulseDir = 1;
+let metroStartTime = 0;
+const CLICK_FREQ = 1000;
+const CLICK_DUR = 0.03;
+
+function onMetroBpmChange() {
+  metroBpm = parseInt(document.getElementById('metro-bpm').value);
+  document.getElementById('metro-bpm-display').textContent = metroBpm;
+  updateMetroInterval();
+}
+
+function setMetroPreset(bpm) {
+  document.getElementById('metro-bpm').value = bpm;
+  onMetroBpmChange();
+  document.querySelectorAll('.presets .preset-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === bpm);
+  });
+}
+
+function updateMetroInterval() {
+  if (!metroPlaying) return;
+  clearInterval(metroInterval);
+  const intervalMs = 60000 / metroBpm;
+  metroLastTick = performance.now();
+  metroInterval = setInterval(metroTick, intervalMs);
+}
+
+function toggleMetronome() {
+  metroPlaying ? stopMetronome() : startMetronome();
+}
+
+function startMetronome() {
+  ensureAudioCtx();
+  metroAudioCtx = audioCtx;
+  metroGain = metroAudioCtx.createGain();
+  metroGain.gain.value = 0.3;
+  metroGain.connect(metroAudioCtx.destination);
+
+  metroPlaying = true;
+  metroStartTime = performance.now();
+  document.getElementById('metro-play-btn').textContent = '⏹ Stop';
+  updateMetroInterval();
+  animatePendulum();
+  animateLevel();
+}
+
+function stopMetronome() {
+  clearInterval(metroInterval);
+  metroPlaying = false;
+  document.getElementById('metro-play-btn').textContent = '▶ Start';
+  resetMetroVisuals();
+}
+
+function playClick() {
+  const osc = metroAudioCtx.createOscillator();
+  const g = metroAudioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = CLICK_FREQ;
+  g.gain.setValueAtTime(0.4, metroAudioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, metroAudioCtx.currentTime + CLICK_DUR);
+  osc.connect(g);
+  g.connect(metroGain);
+  osc.start();
+  osc.stop(metroAudioCtx.currentTime + CLICK_DUR);
+}
+
+function metroTick() {
+  playClick();
+}
+
+let intervalMs = 0;
+
+let metroPendulumStart = 0;
+let metroPendulumAnimId = null;
+
+function animatePendulum() {
+  cancelAnimationFrame(metroPendulumAnimId);
+  const pendulum = document.getElementById('metro-pendulum');
+  const maxAngle = 35;
+
+  function tick(now) {
+    if (!metroPlaying) return;
+    const intervalMs = 60000 / metroBpm;
+    const elapsed = now - metroStartTime;
+    const swing = Math.floor(elapsed / intervalMs);
+    const frac = (elapsed % intervalMs) / intervalMs;
+    const goingRight = swing % 2 === 0;
+    const angle = goingRight
+      ? -maxAngle + frac * maxAngle * 2
+      : maxAngle - frac * maxAngle * 2;
+    pendulum.style.transform = 'rotate(' + angle + 'deg)';
+    metroPendulumAnimId = requestAnimationFrame(tick);
+  }
+
+  metroPendulumAnimId = requestAnimationFrame(tick);
+}
+
+let metroLevelAnimId = null;
+
+function animateLevel() {
+  cancelAnimationFrame(metroLevelAnimId);
+  const leds = document.querySelectorAll('.metro-led');
+  const maxLeds = leds.length;
+
+  function tick(now) {
+    if (!metroPlaying) return;
+    const intervalMs = 60000 / metroBpm;
+    const elapsed = now - metroStartTime;
+    const progress = elapsed % intervalMs;
+    let level;
+    if (progress < 30) {
+      level = maxLeds;
+    } else {
+      level = maxLeds * Math.exp(-(progress - 30) / (intervalMs * 0.4));
+    }
+
+    leds.forEach(function(led, i) {
+      led.classList.remove('on', 'green', 'yellow', 'red');
+      if (i < level) {
+        let color = 'green';
+        if (i >= leds.length * 0.8) color = 'red';
+        else if (i >= leds.length * 0.6) color = 'yellow';
+        led.classList.add('on', color);
+      }
+    });
+
+    metroLevelAnimId = requestAnimationFrame(tick);
+  }
+
+  metroLevelAnimId = requestAnimationFrame(tick);
+}
+
+function resetMetroVisuals() {
+  const pendulum = document.getElementById('metro-pendulum');
+  cancelAnimationFrame(metroPendulumAnimId);
+  cancelAnimationFrame(metroLevelAnimId);
+  pendulum.style.transform = 'rotate(0deg)';
+  document.querySelectorAll('.metro-led').forEach(led => {
+    led.classList.remove('on', 'green', 'yellow', 'red');
+  });
+  metroPulseDir = 1;
+}
+
+// ════════════════════════════════════════════════════════
 // SHARED DRAWING
 // ════════════════════════════════════════════════════════
 
@@ -1558,7 +1803,7 @@ function showTab(pageId) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  const idx = ['page-presets','page-recorder','page-tuner'].indexOf(pageId);
+  const idx = ['page-presets','page-recorder','page-tuner','page-metronome'].indexOf(pageId);
   document.querySelectorAll('.tab')[idx].classList.add('active');
   localStorage.setItem('activeTab', pageId);
   // Redraw static graphs for the activated page
@@ -1578,7 +1823,7 @@ window.addEventListener('resize', ()=>{
 
 // Restore active tab from localStorage
 const savedTab = localStorage.getItem('activeTab');
-if (savedTab && ['page-presets','page-recorder','page-tuner'].includes(savedTab)) {
+if (savedTab && ['page-presets','page-recorder','page-tuner','page-metronome'].includes(savedTab)) {
   showTab(savedTab);
 }
 
