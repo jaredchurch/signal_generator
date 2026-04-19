@@ -17,3 +17,8 @@ printf '%s\n' '{' '  "$schema": "https://opencode.ai/config.json",' '  "model": 
 #     apt-get update
 #     apt-get install -y gh
 # fi
+
+# Install npm dependencies if not already present
+if [ ! -d "node_modules" ]; then
+    npm install
+fi
