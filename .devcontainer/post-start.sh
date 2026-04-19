@@ -8,4 +8,4 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Start the development server
-npm run dev
+# npm run dev
