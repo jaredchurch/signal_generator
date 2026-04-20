@@ -17,6 +17,10 @@ function onMetroBpmChange() {
   metroBpm = parseInt(document.getElementById('metro-bpm').value);
   document.getElementById('metro-bpm-display').textContent = metroBpm;
   updateMetroInterval();
+  // Sync synth pads tempo
+  if (typeof syncPadTempoFromMetronome === 'function') {
+    syncPadTempoFromMetronome(metroBpm);
+  }
 }
 
 function setMetroPreset(bpm) {

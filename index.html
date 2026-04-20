@@ -13,6 +13,61 @@
     }
     body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 40px; }
 
+    /* Tooltip styles */
+    [title] { position: relative; }
+    [title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card2);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      white-space: nowrap;
+      z-index: 100;
+      pointer-events: none;
+      margin-bottom: 4px;
+    }
+
+    /* Card info tooltip */
+    .card[data-info] { position: relative; }
+    .card[data-info]:hover::after {
+      content: attr(data-info);
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--card2);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      white-space: normal;
+      max-width: 250px;
+      z-index: 100;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+    }
+
+    /* Info icon */
+    .info-icon {
+      display: inline-block;
+      font-size: 0.7rem;
+      color: var(--muted);
+      cursor: help;
+      margin-left: 4px;
+      font-weight: normal;
+    }
+    .info-icon:hover {
+      color: var(--accent);
+    }
+
+    /* Card h2 with info icon */
+    .card h2 { display: flex; align-items: center; }
+
     /* ── Header ── */
     header { text-align: center; padding: 24px 20px 0; }
     header h1 { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
@@ -564,24 +619,144 @@
 
     <!-- Left: controls -->
     <div class="flex-col">
-      <div class="card">
-        <h2>Key</h2>
+      <div class="card" data-info="Key: Select the root note (pitch) for your chord. The chord progression is built on this key.">
+        <h2>Key <span class="info-icon" title="Select the root note (pitch) for your chord. The chord progression is built on this key.">ℹ</span></h2>
         <div class="pad-key-grid" id="pad-key-grid"></div>
-        <p style="font-size:.75rem;color:var(--muted);margin-top:8px;">FIXED IN OCTAVE 4 — NEEDS WORK</p>
       </div>
 
-      <div class="card">
-        <h2>Volume</h2>
+      <div class="card" data-info="Scale: Choose the musical scale that quantizes all notes. Major sounds happy, Minor sounds sad. Other modes have different characters.">
+        <h2>Scale <span class="info-icon">ℹ</span></h2>
+        <select class="styled" id="pad-scale-select" onchange="onPadScaleChange()" style="width:100%;">
+          <option value="major">Major (Ionian)</option>
+          <option value="minor">Minor (Aeolian)</option>
+          <option value="dorian">Dorian</option>
+          <option value="mixolydian">Mixolydian</option>
+          <option value="phrygian">Phrygian</option>
+          <option value="lydian">Lydian</option>
+          <option value="harmonic">Harmonic Minor</option>
+          <option value="pentatonic_major">Major Pentatonic</option>
+          <option value="pentatonic_minor">Minor Pentatonic</option>
+        </select>
+      </div>
+
+      <div class="card" data-info="Waveform: The shape of the sound wave. Triangle is smooth, Sine is pure, Sawtooth is bright/beaky, Square is hollow.">
+        <h2>Waveform <span class="info-icon">ℹ</span></h2>
+        <select class="styled" id="pad-wave-select" onchange="onPadWaveChange()" style="width:100%;">
+          <option value="sine">Sine</option>
+          <option value="triangle" selected>Triangle</option>
+          <option value="sawtooth">Sawtooth</option>
+          <option value="square">Square</option>
+        </select>
+        <div class="vol-row" style="margin-top:8px;">
+          <label class="small">Detune</label>
+          <input type="range" id="pad-detune" min="0" max="30" step="1" value="5" oninput="onPadDetuneChange()"/>
+          <span id="pad-detune-label" style="font-size:.75rem;min-width:24px;">5</span>
+          <span style="color:var(--muted);font-size:.65rem;">cents</span>
+        </div>
+      </div>
+
+      <div class="card" data-info="Chord: Choose the chord type. Major=happy, Minor=sad, 7th=jazzy, Suspended=suspense. The selected type is applied to each chord in the progression.">
+        <h2>Chord <span class="info-icon">ℹ</span></h2>
+        <select class="styled" id="pad-chord-select" onchange="onPadChordChange()" style="width:100%;">
+          <option value="maj">Major</option>
+          <option value="min">Minor</option>
+          <option value="7">Dominant 7th</option>
+          <option value="maj7">Major 7th</option>
+          <option value="min7">Minor 7th</option>
+          <option value="sus2">Sus2</option>
+          <option value="sus4">Sus4</option>
+        </select>
+      </div>
+
+      <div class="card" data-info="Progression: The sequence of chords to play. Use the arrows to move through manually, or set Duration (beats per chord) to auto-advance.">
+        <h2>Progression <span class="info-icon">ℹ</span></h2>
+        <select class="styled" id="pad-prog-select" onchange="onPadProgressionChange()" style="width:100%;font-size:.8rem;">
+          <option value="I-V-vi-IV">I - V - vi - IV</option>
+          <option value="I-IV-V-I">I - IV - V - I</option>
+          <option value="vi-IV-I-V">vi - IV - I - V</option>
+          <option value="ii-V-I-V">ii - V - I - V</option>
+          <option value="none">Single Chord (No Progression)</option>
+        </select>
+        <div class="flex-row" style="margin-top:8px;justify-content:center;">
+          <button class="btn btn-sm btn-stop" id="pad-prog-prev" onclick="padProgressionPrev()">◀</button>
+          <span id="pad-prog-display" style="font-size:.85rem;font-weight:700;min-width:30px;text-align:center;">—</span>
+          <button class="btn btn-sm btn-stop" id="pad-prog-next" onclick="padProgressionNext()">▶</button>
+        </div>
+        <div class="flex-row" style="margin-top:6px;justify-content:center;gap:4px;">
+          <label class="small" style="font-size:.7rem;">Duration:</label>
+          <select class="styled" id="pad-cycle-select" onchange="onPadCycleChange()" style="font-size:.7rem;padding:2px 4px;">
+            <option value="4">4 beats</option>
+            <option value="2">2 beats</option>
+            <option value="8">8 beats</option>
+            <option value="1">1 beat</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card" data-info="Tempo: How fast chords progress. BPM = beats per minute. At 4 beats/chord, 120 BPM = 2 seconds per chord.">
+        <h2>Tempo <span class="info-icon">ℹ</span></h2>
         <div class="vol-row">
-          <input type="range" id="pad-volume" min="0" max="1" step="0.01" value="0.3" oninput="onPadVolumeChange()"/>
+          <input type="range" id="pad-tempo" min="40" max="200" value="120" oninput="onPadTempoChange()" title="Tempo in beats per minute"/>
+          <span id="pad-tempo-label" style="font-size:.85rem;font-weight:700;min-width:42px;">120</span>
+          <span style="color:var(--muted);font-size:.75rem;">BPM</span>
+        </div>
+      </div>
+
+      <div class="card" data-info="Volume: Master volume. Attack = fade in time when chord starts. Release = fade out time when chord changes.">
+        <h2>Volume <span class="info-icon">ℹ</span></h2>
+        <div class="vol-row">
+          <input type="range" id="pad-volume" min="0" max="1" step="0.01" value="0.3" oninput="onPadVolumeChange()" title="Master volume"/>
           <span id="pad-vol-label">30%</span>
         </div>
+        <div class="flex-row" style="margin-top:6px;">
+          <label class="small">Attack</label>
+          <input type="range" id="pad-attack" min="0.1" max="5" step="0.1" value="0.5" oninput="onPadEnvChange()"/>
+          <span id="pad-attack-label" style="font-size:.7rem;min-width:32px;">0.5s</span>
+        </div>
+        <div class="flex-row" style="margin-top:4px;">
+          <label class="small">Release</label>
+          <input type="range" id="pad-release" min="0.1" max="5" step="0.1" value="0.5" oninput="onPadEnvChange()" title="Release time - how long old chord fades out"/>
+          <span id="pad-release-label" style="font-size:.7rem;min-width:32px;">2.0s</span>
+        </div>
+      </div>
+
+      <div class="card" data-info="Filter: Low-pass filter cuts high frequencies. Lower cutoff = warmer/muffled sound. Higher = brighter. LFO modulates this automatically.">
+        <h2>Filter <span class="info-icon">ℹ</span></h2>
+        <div class="flex-row">
+          <label class="small">Cutoff</label>
+          <input type="range" id="pad-filter" min="200" max="3000" step="50" value="1200" oninput="onPadFilterChange()"/>
+          <span id="pad-filter-label" style="font-size:.7rem;min-width:40px;">1200</span>
+          <span style="color:var(--muted);font-size:.65rem;">Hz</span>
+        </div>
+      </div>
+
+      <div class="card" data-info="LFO (Low Frequency Oscillator): A slow wave that modulates the filter to create movement. Rate = speed of wobble. Depth = amount of wobble.">
+        <h2>LFO <span class="info-icon">ℹ</span></h2>
+        <div class="flex-row">
+          <label class="small">Rate</label>
+          <input type="range" id="pad-lfo-rate" min="0.05" max="2" step="0.05" value="0.25" oninput="onPadLfoChange()" title="LFO rate in Hz"/>
+          <span id="pad-lfo-rate-label" style="font-size:.7rem;min-width:36px;">0.25</span>
+          <span style="color:var(--muted);font-size:.65rem;">Hz</span>
+        </div>
+        <div class="flex-row" style="margin-top:4px;">
+          <label class="small">Depth</label>
+          <input type="range" id="pad-lfo-depth" min="0" max="1000" step="10" value="300" oninput="onPadLfoChange()"/>
+          <span id="pad-lfo-depth-label" style="font-size:.7rem;min-width:32px;">30%</span>
+        </div>
       </div>
 
       <div class="card">
+        <h2>Effects</h2>
         <div class="flex-row">
-          <button class="btn btn-primary" id="pad-play-btn" onclick="togglePad()" style="flex:1;">▶ Play</button>
+          <label class="small">Reverb</label>
+          <input type="range" id="pad-reverb" min="0" max="1" step="0.05" value="0.3" oninput="onPadFxChange()" title="Reverb amount"/>
+          <span id="pad-reverb-label" style="font-size:.7rem;min-width:32px;">30%</span>
         </div>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <button class="btn btn-primary" id="pad-play-btn" onclick="togglePad()" style="width:100%;">▶ Play</button>
+        <div class="rec-status" id="pad-status" style="text-align:center;margin-top:4px;">Ready</div>
       </div>
     </div>
 
