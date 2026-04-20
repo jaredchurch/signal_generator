@@ -52,6 +52,9 @@ function startPads() {
   const baseFreq = noteToFreq(padKey, PAD_OCTAVE);
   const vol = parseFloat(document.getElementById('pad-volume').value);
 
+  padGain = padAudioCtx.createGain();
+  padGain.gain.value = vol;
+
   padAnalyser = padAudioCtx.createAnalyser();
   padAnalyser.fftSize = 2048;
 
@@ -67,7 +70,7 @@ function startPads() {
 
       const gain = padAudioCtx.createGain();
       gain.gain.setValueAtTime(0, padAudioCtx.currentTime);
-      gain.gain.linearRampToValueAtTime(vol / notes.length, padAudioCtx.currentTime + 0.5);
+      gain.gain.linearRampToValueAtTime(1 / notes.length, padAudioCtx.currentTime + 0.5);
 
       // Very gentle low-pass filter
       const filter = padAudioCtx.createBiquadFilter();
@@ -77,7 +80,8 @@ function startPads() {
 
       osc.connect(gain);
       gain.connect(filter);
-      filter.connect(padAnalyser);
+      filter.connect(padGain);
+      padGain.connect(padAnalyser);
       padAnalyser.connect(padAudioCtx.destination);
       osc.start();
       padOscs.push({ osc, gain, filter });
