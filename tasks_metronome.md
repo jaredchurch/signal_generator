@@ -1,4 +1,0 @@
-- [] add beats to bar selection.
-- [] highlight beat 1 in each bar.
-- [] invert the pendulum so that base is fixed postion and top swings.
-- [] add a volume control.
