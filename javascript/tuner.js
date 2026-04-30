@@ -50,12 +50,13 @@ async function startTuner() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
     tunerStream = stream;
-    tunerAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    tunerAudioCtx = ensureAudioCtx();
     tunerAnalyser = tunerAudioCtx.createAnalyser();
     tunerAnalyser.fftSize = TUNER_FFT_SIZE;
     tunerAnalyser.smoothingTimeConstant = 0.8;
     const source = tunerAudioCtx.createMediaStreamSource(stream);
     source.connect(tunerAnalyser);
+    tunerAnalyser.connect(getMasterGain());
 
     tunerActive = true;
     document.getElementById('tuner-start-btn').textContent = '⏹ Stop Tuner';
@@ -85,10 +86,7 @@ function stopTuner() {
     tunerStream.getTracks().forEach(t => t.stop());
     tunerStream = null;
   }
-  if (tunerAudioCtx) {
-    tunerAudioCtx.close();
-    tunerAudioCtx = null;
-  }
+  // Don't close shared audioCtx - just disconnect analyser
   tunerAnalyser = null;
   tunerActive = false;
   document.getElementById('tuner-start-btn').textContent = '▶ Start Tuner';

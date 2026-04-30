@@ -385,7 +385,7 @@ function startPads() {
       convolver.connect(reverbWet);
       reverbDry.connect(padAnalyser);
       padReverbNode = { convolver, reverbWet, wetGain: reverbWet };
-      padAnalyser.connect(padAudioCtx.destination);
+      padAnalyser.connect(getMasterGain());
       osc.start();
       padOscs.push({ osc, gain, filter });
     }

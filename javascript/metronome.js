@@ -10,8 +10,10 @@ let metroInterval = null;
 let metroBpm = 120;
 let metroPulseDir = 1;
 let metroStartTime = 0;
+let metroBeatCount = 0;
 const CLICK_FREQ = 1000;
 const CLICK_DUR = 0.03;
+const BEAT1_FREQ = 1200; // Higher pitch for beat 1
 
 function onMetroBpmChange() {
   metroBpm = parseInt(document.getElementById('metro-bpm').value);
@@ -21,6 +23,16 @@ function onMetroBpmChange() {
   if (typeof syncPadTempoFromMetronome === 'function') {
     syncPadTempoFromMetronome(metroBpm);
   }
+}
+
+function onMetroBeatsChange() {
+  metroBeatCount = 0; // Reset beat counter when beats per bar changes
+}
+
+function onMetroVolumeChange() {
+  const v = parseFloat(document.getElementById('metro-volume').value);
+  document.getElementById('metro-vol-label').textContent = Math.round(v*100)+'%';
+  if (metroGain) metroGain.gain.value = v;
 }
 
 function setMetroPreset(bpm) {
@@ -47,8 +59,8 @@ function startMetronome() {
   ensureAudioCtx();
   metroAudioCtx = audioCtx;
   metroGain = metroAudioCtx.createGain();
-  metroGain.gain.value = 0.3;
-  metroGain.connect(metroAudioCtx.destination);
+  metroGain.gain.value = parseFloat(document.getElementById('metro-volume')?.value || 0.3);
+  metroGain.connect(getMasterGain());
 
   metroPlaying = true;
   metroStartTime = performance.now();
@@ -65,21 +77,46 @@ function stopMetronome() {
   resetMetroVisuals();
 }
 
-function playClick() {
-  const osc = metroAudioCtx.createOscillator();
+function playClick(isBeatOne) {
+  const now = metroAudioCtx.currentTime;
+  const highlightOn = document.getElementById('metro-highlight')?.checked ?? true;
+  const isHighlighted = isBeatOne && highlightOn;
+  const baseFreq = isHighlighted ? BEAT1_FREQ : CLICK_FREQ;
+  const baseGainVal = parseFloat(document.getElementById('metro-volume')?.value || 0.7) * (isHighlighted ? 1.2 : 0.85);
+
+  // Use two oscillators for beat 1 (when highlighted) or single for others
+  const osc1 = metroAudioCtx.createOscillator();
+  osc1.type = 'sine';
+  osc1.frequency.value = baseFreq;
+
   const g = metroAudioCtx.createGain();
-  osc.type = 'sine';
-  osc.frequency.value = CLICK_FREQ;
-  g.gain.setValueAtTime(0.4, metroAudioCtx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, metroAudioCtx.currentTime + CLICK_DUR);
-  osc.connect(g);
+  g.gain.setValueAtTime(baseGainVal, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + CLICK_DUR);
+
+  osc1.connect(g);
+
+  if (isHighlighted) {
+    const osc2 = metroAudioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = baseFreq * 1.5; // Add a harmonic 5th for richer sound
+    osc2.connect(g);
+    osc2.start(now);
+    osc2.stop(now + CLICK_DUR);
+  }
+
   g.connect(metroGain);
-  osc.start();
-  osc.stop(metroAudioCtx.currentTime + CLICK_DUR);
+  osc1.start(now);
+  osc1.stop(now + CLICK_DUR);
+}
+
+function onMetroHighlightChange() {
+  // Just toggles the checkbox, no other action needed
 }
 
 function metroTick() {
-  playClick();
+  const beatsPerBar = parseInt(document.getElementById('metro-beats')?.value || 4);
+  metroBeatCount = (metroBeatCount + 1) % beatsPerBar;
+  playClick(metroBeatCount === 0);
 }
 
 let intervalMs = 0;

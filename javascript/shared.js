@@ -35,3 +35,21 @@ function ensureAudioCtx() {
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
 }
+
+// Global master volume (shared across all pages)
+let masterGain = null;
+function getMasterGain() {
+  ensureAudioCtx();
+  if (!masterGain) {
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = parseFloat(document.getElementById('master-volume')?.value || 0.8);
+    masterGain.connect(audioCtx.destination);
+  }
+  return masterGain;
+}
+
+function onMasterVolumeChange() {
+  const v = parseFloat(document.getElementById('master-volume').value);
+  document.getElementById('master-vol-label').textContent = Math.round(v*100)+'%';
+  if (masterGain) masterGain.gain.value = v;
+}

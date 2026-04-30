@@ -45,12 +45,13 @@ async function startLiveMonitor() {
     if (isRecording) stopRecording();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     liveStream = stream;
-    liveCtx = new (window.AudioContext||window.webkitAudioContext)();
+    liveCtx = ensureAudioCtx();
     liveAnalyser = liveCtx.createAnalyser();
     liveAnalyser.fftSize = 8192;
     liveAnalyser.smoothingTimeConstant = 0.6;
     const source = liveCtx.createMediaStreamSource(stream);
     source.connect(liveAnalyser);
+    liveAnalyser.connect(getMasterGain());
 
     isLiveMonitor = true;
     document.getElementById('live-monitor').checked = true;
@@ -83,10 +84,7 @@ function stopLiveMonitor() {
     liveStream.getTracks().forEach(t => t.stop());
     liveStream = null;
   }
-  if (liveCtx) {
-    liveCtx.close();
-    liveCtx = null;
-  }
+  // Don't close shared audioCtx - just disconnect analyser
   liveAnalyser = null;
   isLiveMonitor = false;
   document.getElementById('live-monitor').checked = false;
@@ -117,11 +115,10 @@ async function startRecording() {
     document.getElementById('pb-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
 
-    const recCtx = new (window.AudioContext||window.webkitAudioContext)();
-    recAnalyser = recCtx.createAnalyser();
+    recAnalyser = ensureAudioCtx().createAnalyser();
     recAnalyser.fftSize = 8192;
     recAnalyser.smoothingTimeConstant = 0.6;
-    const micSource = recCtx.createMediaStreamSource(stream);
+    const micSource = audioCtx.createMediaStreamSource(stream);
     micSource.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
@@ -196,12 +193,13 @@ function startPlayback() {
   stopPlayback();
 
   pbLooping = document.getElementById('pb-loop').checked;
-  pbAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  ensureAudioCtx();
+  pbAudioCtx = audioCtx;
   pbGain     = pbAudioCtx.createGain();
   pbGain.gain.value = parseFloat(document.getElementById('rec-vol').value);
   pbAnalyser = pbAudioCtx.createAnalyser();
   pbAnalyser.fftSize=8192; pbAnalyser.smoothingTimeConstant=0.6;
-  pbGain.connect(pbAnalyser); pbAnalyser.connect(pbAudioCtx.destination);
+  pbGain.connect(pbAnalyser); pbAnalyser.connect(getMasterGain());
 
   pbSource = pbAudioCtx.createBufferSource();
   pbSource.buffer = recordedBuffer;
