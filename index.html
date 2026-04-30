@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Signal Generator 🎛️</title>
+  <link rel="icon" href="icons/favicon.ico" type="image/x-icon"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -171,6 +172,11 @@
 <header>
   <h1>🎛️ Signal Generator &amp; Analyser</h1>
   <p>Waveform presets · 32-channel generator · audio recorder &amp; analyser</p>
+  <div class="vol-row" style="justify-content:center;margin-top:10px;max-width:300px;margin-left:auto;margin-right:auto;">
+    <label class="small">Master Volume</label>
+    <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.8" oninput="onMasterVolumeChange()"/>
+    <span id="master-vol-label">80%</span>
+  </div>
 </header>
 
 <!-- ═══ TAB BAR ═══ -->
@@ -504,6 +510,23 @@
           <button class="preset-btn" onclick="setMetroPreset(200)">200</button>
           <button class="preset-btn" onclick="setMetroPreset(220)">220</button>
         </div>
+        <div class="flex-row" style="margin-bottom:12px;align-items:center;">
+          <label class="small" style="min-width:85px;">Beats per bar</label>
+          <select class="styled" id="metro-beats" onchange="onMetroBeatsChange()" style="flex:1;">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+        </div>
+        <div class="vol-row" style="margin-bottom:12px;">
+          <label class="small">Volume</label>
+          <input type="range" id="metro-volume" min="0" max="1" step="0.01" value="0.3" oninput="onMetroVolumeChange()"/>
+          <span id="metro-vol-label">30%</span>
+        </div>
         <div class="flex-row">
           <button class="btn btn-primary" id="metro-play-btn" onclick="toggleMetronome()" style="flex:1;">▶ Start</button>
         </div>
@@ -763,6 +786,12 @@ function onP1VolumeChange() {
   if (p1PresetGain) p1PresetGain.gain.value = v;
 }
 
+// Link all volume controls: update master affects all, individual controls adjust their own gain
+function linkVolumes() {
+  // Ensure master gain exists
+  getMasterGain();
+}
+
 function toggleP1Unified() {
   p1PresetPlaying ? stopP1Unified() : startP1Unified();
 }
@@ -779,7 +808,7 @@ function startP1Unified() {
   p1PresetAnalyser.fftSize = 8192;
   p1PresetAnalyser.smoothingTimeConstant = 0.75;
   p1PresetGain.connect(p1PresetAnalyser);
-  p1PresetAnalyser.connect(audioCtx.destination);
+  p1PresetAnalyser.connect(getMasterGain());
 
   if (p1NoiseType !== 'off') {
     startNoiseInto(p1NoiseType, p1PresetGain, nodes => p1PresetNoise=nodes);
@@ -957,12 +986,13 @@ async function startLiveMonitor() {
     if (isRecording) stopRecording();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     liveStream = stream;
-    liveCtx = new (window.AudioContext||window.webkitAudioContext)();
+    liveCtx = ensureAudioCtx();
     liveAnalyser = liveCtx.createAnalyser();
     liveAnalyser.fftSize = 8192;
     liveAnalyser.smoothingTimeConstant = 0.6;
     const source = liveCtx.createMediaStreamSource(stream);
     source.connect(liveAnalyser);
+    liveAnalyser.connect(getMasterGain());
     
     isLiveMonitor = true;
     document.getElementById('live-monitor').checked = true;
@@ -995,23 +1025,20 @@ function stopLiveMonitor() {
     liveStream.getTracks().forEach(t => t.stop());
     liveStream = null;
   }
-  if (liveCtx) {
-    liveCtx.close();
-    liveCtx = null;
-  }
+  // Don't close shared audioCtx - just disconnect analyser
   liveAnalyser = null;
   isLiveMonitor = false;
   document.getElementById('live-monitor').checked = false;
   document.getElementById('live-status').textContent = 'Monitor off';
   document.getElementById('live-status').classList.remove('ok');
-  
+
   const timeTag = document.getElementById('rec-time-tag');
   const freqTag = document.getElementById('rec-freq-tag');
   timeTag.textContent = 'Recorded';
   freqTag.textContent = 'Recorded';
   timeTag.className = 'tag tag-rec';
   freqTag.className = 'tag tag-rec';
-  
+
   if (!recordedBuffer) {
     document.getElementById('no-rec-time').style.display='flex';
     document.getElementById('no-rec-freq').style.display='flex';
@@ -1029,11 +1056,10 @@ async function startRecording() {
     document.getElementById('pb-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
 
-    const recCtx = new (window.AudioContext||window.webkitAudioContext)();
-    recAnalyser = recCtx.createAnalyser();
+    recAnalyser = ensureAudioCtx().createAnalyser();
     recAnalyser.fftSize = 8192;
     recAnalyser.smoothingTimeConstant = 0.6;
-    const micSource = recCtx.createMediaStreamSource(stream);
+    const micSource = audioCtx.createMediaStreamSource(stream);
     micSource.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
@@ -1100,6 +1126,12 @@ async function processRecording() {
   drawRecordedFreq(recordedBuffer.getChannelData(0), recordedBuffer.sampleRate);
 }
 
+function onMasterVolumeChange() {
+  const v = parseFloat(document.getElementById('master-volume').value);
+  document.getElementById('master-vol-label').textContent = Math.round(v*100)+'%';
+  if (masterGain) masterGain.gain.value = v;
+}
+
 /* Playback */
 function togglePlayback() { pbPlaying ? stopPlayback() : startPlayback(); }
 
@@ -1108,12 +1140,13 @@ function startPlayback() {
   stopPlayback();
 
   pbLooping = document.getElementById('pb-loop').checked;
-  pbAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  ensureAudioCtx();
+  pbAudioCtx = audioCtx;
   pbGain     = pbAudioCtx.createGain();
   pbGain.gain.value = parseFloat(document.getElementById('rec-vol').value);
   pbAnalyser = pbAudioCtx.createAnalyser();
   pbAnalyser.fftSize=8192; pbAnalyser.smoothingTimeConstant=0.6;
-  pbGain.connect(pbAnalyser); pbAnalyser.connect(pbAudioCtx.destination);
+  pbGain.connect(pbAnalyser); pbAnalyser.connect(getMasterGain());
 
   pbSource = pbAudioCtx.createBufferSource();
   pbSource.buffer = recordedBuffer;
@@ -1280,12 +1313,13 @@ async function startTuner() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
     tunerStream = stream;
-    tunerAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    tunerAudioCtx = ensureAudioCtx();
     tunerAnalyser = tunerAudioCtx.createAnalyser();
     tunerAnalyser.fftSize = TUNER_FFT_SIZE;
     tunerAnalyser.smoothingTimeConstant = 0.8;
     const source = tunerAudioCtx.createMediaStreamSource(stream);
     source.connect(tunerAnalyser);
+    tunerAnalyser.connect(getMasterGain());
 
     tunerActive = true;
     document.getElementById('tuner-start-btn').textContent = '⏹ Stop Tuner';
@@ -1315,10 +1349,7 @@ function stopTuner() {
     tunerStream.getTracks().forEach(t => t.stop());
     tunerStream = null;
   }
-  if (tunerAudioCtx) {
-    tunerAudioCtx.close();
-    tunerAudioCtx = null;
-  }
+  // Don't close shared audioCtx - just disconnect analyser
   tunerAnalyser = null;
   tunerActive = false;
   document.getElementById('tuner-start-btn').textContent = '▶ Start Tuner';
@@ -1495,13 +1526,37 @@ let metroInterval = null;
 let metroBpm = 120;
 let metroPulseDir = 1;
 let metroStartTime = 0;
+let metroBeatCount = 0;
 const CLICK_FREQ = 1000;
 const CLICK_DUR = 0.03;
+const BEAT1_FREQ = 1200; // Higher pitch for beat 1
+
+// Global master volume (shared across all pages)
+let masterGain = null;
+function getMasterGain() {
+  ensureAudioCtx();
+  if (!masterGain) {
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = parseFloat(document.getElementById('master-volume')?.value || 0.8);
+    masterGain.connect(audioCtx.destination);
+  }
+  return masterGain;
+}
 
 function onMetroBpmChange() {
   metroBpm = parseInt(document.getElementById('metro-bpm').value);
   document.getElementById('metro-bpm-display').textContent = metroBpm;
   updateMetroInterval();
+}
+
+function onMetroBeatsChange() {
+  metroBeatCount = 0; // Reset beat counter when beats per bar changes
+}
+
+function onMetroVolumeChange() {
+  const v = parseFloat(document.getElementById('metro-volume').value);
+  document.getElementById('metro-vol-label').textContent = Math.round(v*100)+'%';
+  if (metroGain) metroGain.gain.value = v;
 }
 
 function setMetroPreset(bpm) {
@@ -1528,8 +1583,8 @@ function startMetronome() {
   ensureAudioCtx();
   metroAudioCtx = audioCtx;
   metroGain = metroAudioCtx.createGain();
-  metroGain.gain.value = 0.3;
-  metroGain.connect(metroAudioCtx.destination);
+  metroGain.gain.value = parseFloat(document.getElementById('metro-volume')?.value || 0.3);
+  metroGain.connect(getMasterGain());
 
   metroPlaying = true;
   metroStartTime = performance.now();
@@ -1546,12 +1601,12 @@ function stopMetronome() {
   resetMetroVisuals();
 }
 
-function playClick() {
+function playClick(isBeatOne) {
   const osc = metroAudioCtx.createOscillator();
   const g = metroAudioCtx.createGain();
   osc.type = 'sine';
-  osc.frequency.value = CLICK_FREQ;
-  g.gain.setValueAtTime(0.4, metroAudioCtx.currentTime);
+  osc.frequency.value = isBeatOne ? BEAT1_FREQ : CLICK_FREQ;
+  g.gain.setValueAtTime(isBeatOne ? 0.6 : 0.4, metroAudioCtx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, metroAudioCtx.currentTime + CLICK_DUR);
   osc.connect(g);
   g.connect(metroGain);
@@ -1560,7 +1615,9 @@ function playClick() {
 }
 
 function metroTick() {
-  playClick();
+  const beatsPerBar = parseInt(document.getElementById('metro-beats').value);
+  metroBeatCount = (metroBeatCount + 1) % beatsPerBar;
+  playClick(metroBeatCount === 0);
 }
 
 let intervalMs = 0;
@@ -1714,7 +1771,7 @@ function startPads() {
       osc.connect(gain);
       gain.connect(filter);
       filter.connect(padAnalyser);
-      padAnalyser.connect(padAudioCtx.destination);
+      padAnalyser.connect(getMasterGain());
       osc.start();
       padOscs.push({ osc, gain, filter });
     }

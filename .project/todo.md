@@ -1,0 +1,4 @@
+- [x] 1. Add a volume control to the metronome page & link volume controls across all pages.
+- [x] 2. In the metronome can you add a selection of beats per bar, and highlight beat 1 of each bar with a slightly different sound.
+- [] 3. On tuner rather than a pendulum can you do a vertical bar that moves left and right along a spectrum.
+- [] 4. on tuner allow option to play the note on the page as well to help with feel of matching the note.
