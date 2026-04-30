@@ -73,11 +73,12 @@ function drawLiveFreq(canvasId, analyser) {
 
 function drawFreqBars(ctx, W, H, data, sampleRate) {
   const nyquist = sampleRate/2;
-  const maxDisplay = Math.min(MAX_FREQ, nyquist);
+  const maxDisplay = Math.min(getSpectrumRange(), nyquist);
   const MIN_FREQ_LOG = 10;
   const padX = 40;
   const padBot = 22;
   const usableW = W - padX - 10;
+  const powerRange = getPowerRange(); // dB range to display
 
   // Find max value for normalization
   let maxVal = 0;
@@ -92,7 +93,9 @@ function drawFreqBars(ctx, W, H, data, sampleRate) {
     const bin = Math.floor((freq/nyquist)*data.length);
     if(bin >= data.length) break;
     const x = padX + frac * usableW;
-    const barH = (data[bin]/maxVal)*(H-padBot-5);
+    // Scale bar height based on power range (0 dB = full range, 80 dB = only loudest signals)
+    const normalizedVal = data[bin] / maxVal;
+    const barH = Math.pow(normalizedVal, powerRange / 40) * (H - padBot - 5);
     const hue = 200+(data[bin]/255)*60;
     ctx.fillStyle=`hsl(${hue},80%,60%)`;
     const barW = Math.max(1, (1/numBars) * usableW - 1);

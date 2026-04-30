@@ -53,3 +53,32 @@ function onMasterVolumeChange() {
   document.getElementById('master-vol-label').textContent = Math.round(v*100)+'%';
   if (masterGain) masterGain.gain.value = v;
 }
+
+// Global spectrum range (synced across all instances)
+function getSpectrumRange() {
+  return parseInt(document.getElementById('spectrum-range')?.value || 32000);
+}
+
+function onSpectrumRangeChange() {
+  // Redraw all active spectrum displays
+  if (typeof drawP1Graphs === 'function' && document.getElementById('page-presets').classList.contains('active')) {
+    drawP1Graphs();
+  }
+  // Force redraw of active tab's spectrum
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab) {
+    const idx = Array.from(document.querySelectorAll('.tab')).indexOf(activeTab);
+    const pages = ['page-presets', 'page-recorder', 'page-tuner', 'page-metronome', 'page-pads'];
+    if (pages[idx]) showTab(pages[idx]);
+  }
+}
+
+// Power range (y-axis) for spectrum analyzer
+function getPowerRange() {
+  return parseInt(document.getElementById('power-range')?.value || 40);
+}
+
+function onPowerRangeChange() {
+  // Same redraw logic as spectrum range change
+  onSpectrumRangeChange();
+}

@@ -38,6 +38,46 @@ function setTunerMiddleC() {
   onTunerNoteSelect();
 }
 
+let tunerNoteOsc = null;
+let tunerNoteGain = null;
+let tunerNotePlaying = false;
+function togglePlayTargetNote() {
+  if (tunerNotePlaying) {
+    stopTargetNote();
+  } else {
+    startTargetNote();
+  }
+}
+function startTargetNote() {
+  if (!tunerTargetFreq) return;
+  ensureAudioCtx();
+  stopTargetNote(); // Stop any existing note
+  const now = audioCtx.currentTime;
+  tunerNoteOsc = audioCtx.createOscillator();
+  tunerNoteGain = audioCtx.createGain();
+  tunerNoteOsc.type = 'sine';
+  tunerNoteOsc.frequency.setValueAtTime(tunerTargetFreq, now);
+  tunerNoteGain.gain.setValueAtTime(0, now);
+  tunerNoteGain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+  tunerNoteOsc.connect(tunerNoteGain);
+  tunerNoteGain.connect(getMasterGain());
+  tunerNoteOsc.start(now);
+  tunerNotePlaying = true;
+  document.getElementById('tuner-play-note-btn').textContent = '⏹ Stop Note';
+}
+function stopTargetNote() {
+  if (tunerNoteOsc) {
+    try {
+      tunerNoteGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      tunerNoteOsc.stop(audioCtx.currentTime + 0.1);
+    } catch(e) {}
+    tunerNoteOsc = null;
+    tunerNoteGain = null;
+  }
+  tunerNotePlaying = false;
+  document.getElementById('tuner-play-note-btn').textContent = '🔊 Play Note';
+}
+
 async function toggleTuner() {
   tunerActive ? stopTuner() : await startTuner();
 }
@@ -101,9 +141,14 @@ function stopTuner() {
 }
 
 function resetTunerDisplay() {
-  const needle = document.getElementById('tuner-needle');
-  needle.style.transform = 'rotate(0deg)';
-  needle.classList.remove('shaking');
+  const vbar = document.getElementById('tuner-vbar');
+  const barLow = document.getElementById('tuner-bar-low');
+  const barMid = document.getElementById('tuner-bar-mid');
+  const barHigh = document.getElementById('tuner-bar-high');
+  vbar.style.left = '50%';
+  barLow.style.background = 'var(--border)';
+  barMid.style.background = 'var(--border)';
+  barHigh.style.background = 'var(--border)';
   document.getElementById('tuner-display-cents').textContent = '—';
   document.getElementById('tuner-indicator').textContent = 'OFF';
   document.getElementById('tuner-indicator').className = 'tuner-indicator tuner-off';
@@ -120,34 +165,49 @@ function processTunerData() {
   const detectedFreq = detectPitchAutoCorr(data, TUNER_SAMPLE_RATE, 50, 2000);
   const centsLabel = document.getElementById('tuner-display-cents');
   const indicator = document.getElementById('tuner-indicator');
-  const needle = document.getElementById('tuner-needle');
+  const vbar = document.getElementById('tuner-vbar');
+  const barLow = document.getElementById('tuner-bar-low');
+  const barMid = document.getElementById('tuner-bar-mid');
+  const barHigh = document.getElementById('tuner-bar-high');
 
   if (!detectedFreq || detectedFreq < 30 || detectedFreq > 5000 || !isStablePitch(data)) {
     centsLabel.textContent = '—';
     indicator.textContent = 'NO pitch';
     indicator.className = 'tuner-indicator tuner-off';
-    needle.style.transform = 'rotate(0deg)';
-    needle.classList.add('shaking');
+    vbar.style.left = '50%';
+    barLow.style.background = 'var(--border)';
+    barMid.style.background = 'var(--border)';
+    barHigh.style.background = 'var(--border)';
     return;
   }
 
   const cents = Math.round(1200 * Math.log2(detectedFreq / tunerTargetFreq));
   centsLabel.textContent = (cents > 0 ? '+' : '') + cents + '¢';
 
+  // Update vertical bar position (0% = -50 cents, 100% = +50 cents)
+  const pct = Math.max(0, Math.min(100, (cents + 50) * 2));
+  vbar.style.left = pct + '%';
+
+  // Update bar colors based on deviation
   if (Math.abs(cents) <= 5) {
     indicator.textContent = 'IN TUNE';
     indicator.className = 'tuner-indicator in-tune';
+    barLow.style.background = 'var(--green)';
+    barMid.style.background = 'var(--green)';
+    barHigh.style.background = 'var(--green)';
   } else if (cents > 0) {
     indicator.textContent = 'TOO HIGH';
     indicator.className = 'tuner-indicator high';
+    barLow.style.background = 'var(--red)';
+    barMid.style.background = cents > 25 ? 'var(--red)' : 'var(--border)';
+    barHigh.style.background = 'var(--red)';
   } else {
     indicator.textContent = 'TOO LOW';
     indicator.className = 'tuner-indicator low';
+    barLow.style.background = 'var(--accent)';
+    barMid.style.background = cents < -25 ? 'var(--accent)' : 'var(--border)';
+    barHigh.style.background = 'var(--accent)';
   }
-
-  const angle = Math.max(-50, Math.min(50, cents));
-  needle.style.transform = `rotate(${angle}deg)`;
-  needle.classList.remove('shaking');
 }
 
 function detectPitchAutoCorr(data, sampleRate, minFreq, maxFreq) {
