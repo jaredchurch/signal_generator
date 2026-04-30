@@ -1,8 +1,13 @@
 - [x] 1. Add a volume control to the metronome page & link volume controls across all pages.
 - [x] 2. In the metronome can you add a selection of beats per bar, and highlight beat 1 of each bar with a slightly different sound.
-- [] 3. On tuner rather than a pendulum can you do a vertical bar that moves left and right along a spectrum.
-- [] 4. on tuner allow option to play the note on the page as well to help with feel of matching the note.
-- [] 5. metronome: invert the pendulum so that base is fixed postion and top swings.
+- [x] 3. On tuner rather than a pendulum can you do a vertical bar that moves left and right along a spectrum.
+- [x] 4. on tuner allow option to play the note on the page as well to help with feel of matching the note.
+- [x] 5. metronome: invert the pendulum so that base is fixed postion and top swings.
 - [] 6. work on synth-pads to make them better.
-- [] 7. x-axis on spectrum analyser should be somethings I can expand to see larger dynamic range.
+- [x] 7. x-axis on spectrum analyser should be somethings I can expand to see larger dynamic range (on all instances of the spectrum analyser, and these should be sync'd to each other).
 - [] 8. add option to remove "room noise" from spectrum analyser for the tuner.
+- [] 9. more granular bars on spectrum analyser (all instances)
+- [x] 10. completely remove the checkbox for prod mode.
+- [x] 11. tuner bar should move slower/have a range that it wider to allow it to move slower with the sound - it should include markers on it to indicate range that is "good enough" for in tune as well as the perfect point (exact frequency match).
+- [x] BUG001: related to todo item 4 - when played the note should play continually until stopped.
+- [x] BUG002: related to item 7, you have done an option for frequency range (x-axis), but what I wanted was power range (y-axis) - sorry it was my mistake in the description.
