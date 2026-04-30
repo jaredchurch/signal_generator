@@ -226,6 +226,12 @@
 <header>
   <h1>🎛️ Signal Generator &amp; Analyser</h1>
   <p>Waveform presets · 32-channel generator · audio recorder &amp; analyser</p>
+  <div style="margin-top:8px;" id="dev-controls">
+    <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:.75rem;color:var(--muted);">
+      <input type="checkbox" id="prod-mode" onchange="toggleProdMode()"/>
+      <span>Prod Mode (hide Synth Pads)</span>
+    </label>
+  </div>
 </header>
 
 <!-- ═══ TAB BAR ═══ -->
@@ -234,7 +240,7 @@
   <button class="tab"        onclick="showTab('page-recorder')">🎙️ Audio Recorder</button>
   <button class="tab"        onclick="showTab('page-tuner')">🎸 Tuner</button>
   <button class="tab"        onclick="showTab('page-metronome')">🎚️ Metronome</button>
-  <button class="tab"        onclick="showTab('page-pads')">🎹 Synth Pads</button>
+  <button class="tab" id="tab-pads" onclick="showTab('page-pads')">🎹 Synth Pads</button>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════════
@@ -782,6 +788,46 @@
 <script src="javascript/drawing.js"></script>
 <script src="javascript/canvas.js"></script>
 <script src="javascript/main.js"></script>
+<script>
+function initProdMode() {
+  const params = new URLSearchParams(window.location.search);
+  const isProd = params.get('prod') !== null;
+  const isDev = params.get('dev') !== null;
+  const padsTab = document.getElementById('tab-pads');
+  const devCtrls = document.getElementById('dev-controls');
+
+  // Hide dev controls unless ?dev is in URL
+  if (devCtrls) devCtrls.style.display = isDev ? '' : 'none';
+
+  // Hide Synth Pads tab in prod mode
+  if (padsTab) padsTab.style.display = isProd ? 'none' : '';
+
+  // If in prod mode and pads page is active, switch to presets
+  if (isProd) {
+    const padsPage = document.getElementById('page-pads');
+    if (padsPage && padsPage.classList.contains('active')) {
+      showTab('page-presets');
+    }
+  }
+
+  // Sync checkbox for dev preview
+  if (isDev) document.getElementById('prod-mode').checked = isProd;
+}
+function toggleProdMode() {
+  const isProd = document.getElementById('prod-mode').checked;
+  const padsTab = document.getElementById('tab-pads');
+  const padsPage = document.getElementById('page-pads');
+
+  // Hide/show the tab
+  padsTab.style.display = isProd ? 'none' : '';
+
+  // If in prod mode and pads page is active, switch to presets
+  if (isProd && padsPage.classList.contains('active')) {
+    showTab('page-presets');
+  }
+}
+// Initialize on page load
+window.addEventListener('load', initProdMode);
 </script>
 </body>
 </html>
