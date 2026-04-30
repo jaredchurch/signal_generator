@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Signal Generator 🎛️</title>
+  <title>Audio Tools 🎛️</title>
+  <link rel="icon" href="icons/favicon.ico" type="image/x-icon"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -819,15 +820,16 @@
 <script>
 function initProdMode() {
   const params = new URLSearchParams(window.location.search);
-  const isProd = params.get('prod') !== null;
   const isDev = params.get('dev') !== null;
+  // Default to prod mode unless ?dev is present
+  const isProd = !isDev;
   const padsTab = document.getElementById('tab-pads');
   const devCtrls = document.getElementById('dev-controls');
 
   // Hide dev controls unless ?dev is in URL
   if (devCtrls) devCtrls.style.display = isDev ? '' : 'none';
 
-  // Hide Synth Pads tab in prod mode
+  // Hide Synth Pads tab in prod mode (default)
   if (padsTab) padsTab.style.display = isProd ? 'none' : '';
 
   // If in prod mode and pads page is active, switch to presets
