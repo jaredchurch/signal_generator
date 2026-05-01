@@ -28,22 +28,39 @@ function drawStaticFreq(canvasId, components) {
   drawGrid(ctx,W,H);
   const active=components.filter(c=>c.freq>0&&c.amp>0);
   if (!active.length){drawNoDataText(ctx,W,H,'Add frequencies');return;}
-  const maxAmp=Math.max(...active.map(c=>c.amp));
-  const padX=40,padBot=22,padTop=10;
-  const MIN_FREQ_LOG = 10;
+
+  // Convert component data to frequency spectrum data for drawFreqBars
+  const maxDisplay = getSpectrumRange();
+  const sampleRate = 44100; // Assume standard sample rate for display
+  const nyquist = sampleRate / 2;
+  const bufLen = 2048; // Match typical analyser fftSize
+  const freqData = new Uint8Array(bufLen);
+
+  // Map components to frequency bins
+  const maxAmp = Math.max(...active.map(c=>c.amp));
   active.forEach(c=>{
-    const x=padX+(Math.log(c.freq/MIN_FREQ_LOG)/Math.log(MAX_FREQ/MIN_FREQ_LOG))*(W-padX-10);
-    const barH=(c.amp/maxAmp)*(H-padTop-padBot);
-    const y=H-padBot-barH;
-    const grad=ctx.createLinearGradient(0,y,0,H-padBot);
-    grad.addColorStop(0,'#6c8aff'); grad.addColorStop(1,'rgba(108,138,255,.15)');
-    ctx.fillStyle=grad; ctx.fillRect(x-2,y,4,barH);
-    ctx.fillStyle='#94a3b8'; ctx.font='9px Segoe UI'; ctx.textAlign='center';
+    if (c.freq > maxDisplay || c.freq > nyquist) return;
+    const bin = Math.floor((c.freq / nyquist) * bufLen);
+    if (bin < bufLen) {
+      // Scale amplitude to 0-255 range
+      freqData[bin] = Math.max(freqData[bin], Math.round((c.amp / maxAmp) * 255));
+    }
+  });
+
+  // Use shared spectrum display function
+  drawFreqBars(ctx, W, H, freqData, sampleRate);
+
+  // Draw frequency labels for components
+  const padX = 40;
+  const padBot = 22;
+  ctx.fillStyle='#94a3b8'; ctx.font='9px Segoe UI'; ctx.textAlign='center';
+  active.forEach(c=>{
+    if (c.freq > maxDisplay) return;
+    const MIN_FREQ_LOG = 10;
+    const usableW = W - padX - 10;
+    const x = padX + (Math.log(c.freq / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG)) * usableW;
     ctx.fillText(c.freq>=1000?`${(c.freq/1000).toFixed(1)}k`:`${Math.round(c.freq)}`,x,H-5);
   });
-  ctx.strokeStyle='#2e3250'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(padX,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
-  drawLogFreqLabels(ctx,W,H,padX,padBot);
 }
 
 function drawLiveTime(canvasId, analyser) {
@@ -106,14 +123,54 @@ function drawFreqBars(ctx, W, H, data, sampleRate) {
   ctx.strokeStyle='#2e3250'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(padX,H-padBot); ctx.lineTo(W,H-padBot); ctx.stroke();
   drawLogFreqLabels(ctx,W,H,padX,padBot);
+
+  // Y axis - power labels
+  drawPowerAxis(ctx, W, H, padX, padBot, powerRange);
+}
+
+function drawPowerAxis(ctx, W, H, padX, padBot, powerRange) {
+  ctx.fillStyle='#64748b';
+  ctx.font='10px Segoe UI';
+  ctx.textAlign='right';
+
+  const graphH = H - padBot - 5;
+
+  // dB values to display based on power range
+  const dbValues = [0];
+  const step = powerRange <= 40 ? 10 : 20;
+  for (let db = -step; db >= -powerRange; db -= step) {
+    dbValues.push(db);
+  }
+
+  for (const db of dbValues) {
+    // Map dB to y-position using same formula as bar height
+    // barH = 10^(dB/20 * powerRange/40) * graphH
+    const exponent = (db / 20) * (powerRange / 40);
+    const barH = Math.pow(10, exponent) * graphH;
+    const y = H - padBot - barH;
+
+    if (y < 5 || y > H - padBot - 2) continue;
+
+    // Draw grid line
+    ctx.strokeStyle='#1e2235';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(padX, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+
+    // Draw label
+    ctx.fillText(`${db} dB`, padX - 5, y + 3);
+  }
 }
 
 function drawLogFreqLabels(ctx,W,H,padX,padBot) {
   ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+  const maxDisplay = getSpectrumRange();
+  const MIN_FREQ_LOG = 10;
   [10,20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f=>{
-    if(f>MAX_FREQ) return;
-    const MIN_FREQ_LOG = 10;
-    const x=padX+(Math.log(f/MIN_FREQ_LOG)/Math.log(MAX_FREQ/MIN_FREQ_LOG))*(W-padX-10);
+    if(f>maxDisplay) return;
+    const x=padX+(Math.log(f/MIN_FREQ_LOG)/Math.log(maxDisplay/MIN_FREQ_LOG))*(W-padX-10);
     ctx.fillText(f>=1000?`${f/1000}k`:f, x, H-5);
   });
 }
@@ -138,11 +195,13 @@ function drawNoiseFreq(canvasId, type) {
   drawGrid(ctx,W,H);
   const padBot=22;
   const padX=40;
-  const MIN_FREQ_LOG = 10;
+  const minFreq = 10;
+  const maxDisplay = getSpectrumRange();
+  const usableW = W - padX - 10;
   for(let i=0;i<W;i++){
-    const frac = i/(W-1);
-    const freq = MIN_FREQ_LOG * Math.pow(MAX_FREQ/MIN_FREQ_LOG, frac);
-    const f = freq/MAX_FREQ;
+    const frac = i/usableW;
+    const freq = minFreq * Math.pow(maxDisplay/minFreq, frac);
+    const f = freq/maxDisplay;
     let amp;
     if (type==='white') amp=0.85+(Math.random()-.5)*.1;
     else if (type==='pink') amp=(1-f*.7)*(0.85+(Math.random()-.5)*.1);

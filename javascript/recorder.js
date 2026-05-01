@@ -24,6 +24,7 @@ let pbOffset       = 0;
 let pbAnim         = null;
 let pbLoopStartTime = 0;
 let recAnalyser    = null;
+let recAnalyserCtx = null;
 let recAnim        = null;
 
 function onRecVolChange() {
@@ -43,15 +44,19 @@ async function toggleLiveMonitor() {
 async function startLiveMonitor() {
   try {
     if (isRecording) stopRecording();
+    if (typeof stopTuner === 'function') stopTuner();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     liveStream = stream;
-    liveCtx = ensureAudioCtx();
+
+    // Create a separate AudioContext that is NEVER connected to speakers
+    // This prevents any possibility of mic audio reaching the output
+    liveCtx = new (window.AudioContext||window.webkitAudioContext)();
     liveAnalyser = liveCtx.createAnalyser();
     liveAnalyser.fftSize = 8192;
     liveAnalyser.smoothingTimeConstant = 0.6;
     const source = liveCtx.createMediaStreamSource(stream);
     source.connect(liveAnalyser);
-    liveAnalyser.connect(getMasterGain());
+    // Analyser is NOT connected to any destination - completely silent
 
     isLiveMonitor = true;
     document.getElementById('live-monitor').checked = true;
@@ -84,8 +89,12 @@ function stopLiveMonitor() {
     liveStream.getTracks().forEach(t => t.stop());
     liveStream = null;
   }
-  // Don't close shared audioCtx - just disconnect analyser
+  // Close the separate AudioContext used for live monitoring
+  if (liveCtx && liveCtx.state !== 'closed') {
+    liveCtx.close();
+  }
   liveAnalyser = null;
+  liveCtx = null;
   isLiveMonitor = false;
   document.getElementById('live-monitor').checked = false;
   document.getElementById('live-status').textContent = 'Monitor off';
@@ -110,15 +119,18 @@ async function toggleRecord() {
 async function startRecording() {
   try {
     if (isLiveMonitor) stopLiveMonitor();
+    if (typeof stopTuner === 'function') stopTuner();
     const stream = await navigator.mediaDevices.getUserMedia({audio:true,video:false});
     recChunks=[]; recordedBlob=null; recordedBuffer=null;
     document.getElementById('pb-btn').disabled=true;
     document.getElementById('pb-progress').style.width='0%';
 
-    recAnalyser = ensureAudioCtx().createAnalyser();
+    // Use a separate context for the recording analyser to avoid any possibility of feedback
+    recAnalyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+    recAnalyser = recAnalyserCtx.createAnalyser();
     recAnalyser.fftSize = 8192;
     recAnalyser.smoothingTimeConstant = 0.6;
-    const micSource = audioCtx.createMediaStreamSource(stream);
+    const micSource = recAnalyserCtx.createMediaStreamSource(stream);
     micSource.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
@@ -159,7 +171,14 @@ function stopRecording() {
   if (mediaRecorder&&mediaRecorder.state!=='inactive') mediaRecorder.stop();
   mediaRecorder?.stream?.getTracks().forEach(t=>t.stop());
   isRecording=false;
+
+  // Close the separate recording analysis context
+  if (recAnalyserCtx && recAnalyserCtx.state !== 'closed') {
+    recAnalyserCtx.close();
+  }
+  recAnalyserCtx = null;
   recAnalyser = null;
+
   document.getElementById('rec-btn').textContent='⏺ Record';
   document.getElementById('rec-btn').classList.remove('recording');
   const timeTag = document.getElementById('rec-time-tag');
