@@ -3,226 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Audio Tools 🎛️</title>
-  <link rel="icon" href="icons/favicon.ico" type="image/x-icon"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0f1117; --card: #1a1d27; --card2: #21253a; --border: #2e3250;
-      --accent: #6c8aff; --accent2: #a78bfa; --green: #34d399; --red: #f87171;
-      --yellow: #fbbf24; --text: #e2e8f0; --muted: #64748b;
-    }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 0 0 40px; }
-
-    /* Tooltip styles */
-    [title] { position: relative; }
-    [title]:hover::after {
-      content: attr(title);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card2);
-      color: var(--text);
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      white-space: nowrap;
-      z-index: 100;
-      pointer-events: none;
-      margin-bottom: 4px;
-    }
-
-    /* Card info tooltip */
-    .card[data-info] { position: relative; }
-    .card[data-info]:hover::after {
-      content: attr(data-info);
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: var(--card2);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      white-space: normal;
-      max-width: 250px;
-      z-index: 100;
-      pointer-events: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      border: 1px solid var(--border);
-    }
-
-    /* Info icon */
-    .info-icon {
-      display: inline-block;
-      font-size: 0.7rem;
-      color: var(--muted);
-      cursor: help;
-      margin-left: 4px;
-      font-weight: normal;
-    }
-    .info-icon:hover {
-      color: var(--accent);
-    }
-
-    /* Card h2 with info icon */
-    .card h2 { display: flex; align-items: center; }
-
-    /* ── Header ── */
-    header { text-align: center; padding: 24px 20px 0; }
-    header h1 { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
-
-    /* ── Tabs ── */
-    .tab-bar { display: flex; gap: 0; justify-content: center; margin: 20px 20px 0; border-bottom: 2px solid var(--border); }
-    .tab { padding: 10px 24px; font-size: 0.88rem; font-weight: 700; cursor: pointer; border: none; background: none; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; }
-    .tab:hover { color: var(--text); }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-    /* ── Pages ── */
-    .page { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; }
-    .page.active { display: block; }
-
-    /* ── Card ── */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
-    .card + .card { margin-top: 16px; }
-    .card h2 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 14px; }
-
-    /* ── Layout helpers ── */
-    .cols { display: grid; gap: 20px; }
-    .cols-2 { grid-template-columns: 1fr 1fr; }
-    .cols-left-right { grid-template-columns: 340px 1fr; }
-    @media(max-width:960px){ .cols-left-right,.cols-2 { grid-template-columns:1fr; } }
-    .flex-col { display:flex; flex-direction:column; gap:16px; }
-    .flex-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-    /* ── Buttons ── */
-    .btn { padding: 10px 16px; border: none; border-radius: 12px; font-size: 0.87rem; font-weight: 700; cursor: pointer; transition: opacity .15s, transform .1s; }
-    .btn:active { transform: scale(.97); }
-    .btn:disabled { opacity: .38; cursor: default; }
-    .btn-primary  { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
-    .btn-stop     { background: var(--card2); border: 1.5px solid var(--border); color: var(--text); }
-    .btn-rec      { background: linear-gradient(135deg, #ef4444, #f97316); color: #fff; }
-    .btn-green    { background: linear-gradient(135deg, #34d399, #059669); color: #fff; }
-    .btn-sm       { padding: 5px 12px; font-size: 0.78rem; border-radius: 8px; }
-    .btn-rec.recording { animation: pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
-
-    /* ── Preset buttons ── */
-    .presets { display: flex; gap: 6px; flex-wrap: wrap; }
-    .preset-btn { flex:1; min-width:68px; padding:7px 8px; border:1.5px solid var(--border); border-radius:10px; background:var(--card2); color:var(--text); font-size:.78rem; font-weight:600; cursor:pointer; transition:border-color .2s,background .2s; }
-    .preset-btn:hover { border-color:var(--accent); background:#2a2f4a; }
-    .preset-btn.active { border-color:var(--accent); background:rgba(108,138,255,.15); color:var(--accent); }
-    .noise-btn.active  { border-color:var(--yellow); background:rgba(251,191,36,.12); color:var(--yellow); }
-
-    /* ── Form elements ── */
-    input[type="number"], input[type="text"], select.styled {
-      background: var(--card2); border: 1.5px solid var(--border); border-radius: 8px;
-      color: var(--text); padding: 5px 9px; font-size: 0.85rem;
-    }
-    input[type="number"]:focus, input[type="text"]:focus, select.styled:focus { outline: none; border-color: var(--accent); }
-    input[type="range"] { accent-color: var(--accent); cursor: pointer; }
-    input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width:16px; height:16px; }
-
-    .unit-btn { padding:4px 10px; border:1.5px solid var(--border); border-radius:6px; background:var(--card2); color:var(--muted); font-size:.75rem; font-weight:600; cursor:pointer; }
-    .unit-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(108,138,255,.1); }
-
-    label.small { font-size:.8rem; color:var(--muted); white-space:nowrap; }
-
-    /* ── Volume row ── */
-    .vol-row { display:flex; align-items:center; gap:10px; }
-    .vol-row input[type="range"] { flex:1; }
-    .vol-row span { font-size:.8rem; min-width:36px; text-align:right; }
-
-    /* ── Freq slider (page 1) ── */
-    .freq-slider-wrap { margin-top: 10px; }
-    .freq-slider-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-    .freq-slider-val { font-size:1.3rem; font-weight:800; color:var(--accent); }
-    .freq-slider-sub { font-size:.75rem; color:var(--muted); margin-top:2px; }
-    #single-freq-range { width:100%; height:8px; }
-
-    /* ── Harmonics (page 2) ── */
-    .harmonics-header { display:grid; grid-template-columns:22px 1fr 80px 36px; gap:5px; padding:0 2px; margin-bottom:6px; }
-    .harmonics-header span { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-    .harmonic-row { display:grid; grid-template-columns:22px 1fr 80px 36px; gap:5px; align-items:center; margin-bottom:4px; }
-    .harmonic-row .idx { font-size:.7rem; color:var(--muted); text-align:center; }
-    .freq-input-wrap { position:relative; display:flex; align-items:center; }
-    .freq-input-wrap input[type="text"] { padding:4px 30px 4px 7px; width:100%; font-size:.82rem; }
-    .freq-input-wrap input.active-freq { border-color:var(--accent); }
-    .freq-unit-toggle { position:absolute; right:4px; font-size:.65rem; color:var(--muted); cursor:pointer; padding:2px 3px; border-radius:4px; background:var(--border); user-select:none; }
-    .freq-unit-toggle:hover { color:var(--accent); }
-    .amp-val { font-size:.75rem; color:var(--muted); text-align:right; }
-    .harmonics-scroll { max-height:480px; overflow-y:auto; padding-right:4px; }
-    .harmonics-scroll::-webkit-scrollbar { width:4px; }
-    .harmonics-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-
-    /* ── Graphs ── */
-    canvas { width:100%; height:200px; display:block; border-radius:10px; background:#0a0c14; }
-    canvas.short { height:160px; }
-    .graph-wrap { position:relative; margin-bottom:16px; }
-    .graph-wrap:last-child { margin-bottom:0; }
-    .graph-wrap h3 { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:8px; }
-    .tag { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; }
-    .tag-gen { background:rgba(108,138,255,.2); color:var(--accent); }
-    .tag-rec { background:rgba(248,113,113,.2); color:var(--red); }
-    .tag-live { background:rgba(34,197,94,.2); color:var(--green); animation:pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
-    .no-data { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.82rem; pointer-events:none; border-radius:10px; }
-
-    /* ── Rec status ── */
-    .rec-status { font-size:.82rem; color:var(--red); min-height:20px; margin-top:8px; text-align:center; }
-    .rec-status.ok { color:var(--green); }
-
-    /* ── Note picker ── */
-    .note-freq-display { font-size:.8rem; color:var(--accent); min-width:72px; }
-
-    /* ── Tag indicator ── */
-    .noise-indicator { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:20px; margin-left:6px; vertical-align:middle; background:rgba(251,191,36,.15); color:var(--yellow); }
-
-    /* ── Collapsible ── */
-    .collapsible-header { display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
-    .collapsible-header:hover h2 { color:var(--accent2); }
-    .collapsible-toggle { font-size:.7rem; color:var(--muted); transition:transform .2s; }
-    .collapsible-content { overflow:hidden; transition:max-height .3s ease-out; }
-    .collapsible-content.collapsed { max-height:0 !important; }
-
-    /* ── Tuner ── */
-    .tuner-note { font-size:2.5rem; font-weight:800; }
-    .tuner-freq { font-size:1rem; color:var(--muted); }
-    .tuner-cents { font-size:1.2rem; font-weight:700; }
-    .tuner-indicator { font-size:.85rem; font-weight:700; padding:4px 14px; border-radius:20px; }
-    .tuner-indicator.high { background:rgba(248,113,113,.2); color:var(--red); }
-    .tuner-indicator.low { background:rgba(108,138,255,.2); color:var(--accent); }
-    .tuner-indicator.in-tune { background:rgba(34,197,94,.2); color:var(--green); }
-    .tuner-off { background:rgba(100,116,139,.2); color:var(--muted); }
-
-    /* ── Metronome ── */
-    .metro-visual-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-    @media(max-width:800px){ .metro-visual-row { grid-template-columns:1fr; } }
-    .metro-pendulum-wrap { width:140px; height:200px; margin:0 auto; position:relative; background:var(--card2); border-radius:8px; overflow:hidden; }
-    .metro-pendulum { position:absolute; width:6px; height:140px; background:linear-gradient(to top, var(--accent), var(--accent2)); left:50%; bottom:20px; transform-origin:bottom center; border-radius:3px; }
-    .metro-pivot { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); width:16px; height:16px; background:var(--border); border-radius:50%; }
-    .metro-weight { position:absolute; top:8px; left:50%; transform:translateX(-50%); width:20px; height:20px; background:var(--accent); border-radius:50%; }
-    .metro-level-wrap { width:60px; height:200px; margin:0 auto; background:var(--card2); border-radius:8px; position:relative; overflow:hidden; display:flex; flex-direction:column-reverse; padding:8px 6px; gap:3px; }
-    .metro-led { flex:1; border-radius:2px; background:var(--border); opacity:0.3; transition:opacity .05s, background .05s; }
-    .metro-led.on.green { background:var(--green); opacity:1; box-shadow:0 0 6px var(--green); }
-    .metro-led.on.yellow { background:#fbbf24; opacity:1; box-shadow:0 0 6px #fbbf24; }
-    .metro-led.on.red { background:#ef4444; opacity:1; box-shadow:0 0 6px #ef4444; }
-
-    /* ── Synth Pad ── */
-    .pad-key-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
-    .pad-key-btn { padding:12px 8px; border:1.5px solid var(--border); border-radius:10px; background:var(--card2); color:var(--text); font-size:1.1rem; font-weight:700; cursor:pointer; transition:border-color .2s,background .2s; }
-    .pad-key-btn:hover { border-color:var(--accent); background:#2a2f4a; }
-    .pad-key-btn.active { border-color:var(--accent); background:rgba(108,138,255,.2); color:var(--accent); }
-  </style>
+  <title>Audio Tools — Signal Generator</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 
-<header>
-  <h1>🎛️ Audio Tools</h1>
-  <p>Signal generator · audio recorder · tuner · metronome · synth pads</p>
-  <div class="vol-row" style="justify-content:center;margin-top:10px;max-width:300px;margin-left:auto;margin-right:auto;">
+<header style="position:relative;text-align:center;padding:24px 20px 0;">
+  <h1 style="display:inline-block;margin:0;">🎛️ Audio Tools</h1>
+  <div class="vol-row" style="position:absolute;right:20px;top:50%;transform:translateY(-50%);margin:0;">
     <label class="small">Master Volume</label>
     <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.8" oninput="onMasterVolumeChange()"/>
     <span id="master-vol-label">80%</span>
@@ -342,9 +130,9 @@
         <div class="graph-wrap">
           <h3>Spectrum Analyser <span class="tag tag-gen">Generated</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span>
             <select class="styled" id="power-range-p1-canvas-freq" onchange="onPowerRangeChange('p1-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
-              <option value="10">-10 dB</option>
+              <option value="10" selected>-10 dB</option>
               <option value="20">-20 dB</option>
-              <option value="40" selected>-40 dB</option>
+              <option value="40">-40 dB</option>
               <option value="80">-80 dB</option>
             </select>
           </h3>
@@ -462,9 +250,9 @@
         <div class="graph-wrap" style="position:relative;">
           <h3>Spectrum Analyser <span class="tag tag-rec" id="rec-freq-tag">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span>
             <select class="styled" id="power-range-rec-canvas-freq" onchange="onPowerRangeChange('rec-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
-              <option value="10">-10 dB</option>
+              <option value="10" selected>-10 dB</option>
               <option value="20">-20 dB</option>
-              <option value="40" selected>-40 dB</option>
+              <option value="40">-40 dB</option>
               <option value="80">-80 dB</option>
             </select>
           </h3>
@@ -555,9 +343,9 @@
         <div class="graph-wrap">
           <h3>Spectrum Analyser <span class="tag tag-live" id="tuner-freq-tag" style="display:none;">Live</span>
             <select class="styled" id="power-range-tuner-canvas-freq" onchange="onPowerRangeChange('tuner-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
-              <option value="10">-10 dB</option>
+              <option value="10" selected>-10 dB</option>
               <option value="20">-20 dB</option>
-              <option value="40" selected>-40 dB</option>
+              <option value="40">-40 dB</option>
               <option value="80">-80 dB</option>
             </select>
           </h3>

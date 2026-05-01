@@ -55,7 +55,7 @@ function onMasterVolumeChange() {
 }
 
 // Power range (y-axis) for spectrum analyzer - global setting synced across all pages
-let globalPowerRange = 40; // Default -40 dB
+let globalPowerRange = 10; // Default -10 dB
 
 function getPowerRange(canvasId) {
   return globalPowerRange;

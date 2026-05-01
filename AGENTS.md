@@ -1,17 +1,21 @@
 # Signal Generator
 
 ## Overview
-Single-file web app (`index.html`) — no build system, tests, or CI.
+Web app with separate source files — no build system, tests, or CI.
 
 ## Development
 - `npm run dev` — Start dev server on port 3000 (serves `index.html`)
 - Open `index.html` directly in a browser to test
-- All logic is embedded in the file — HTML, CSS, and JS in one document
+- Source files are separated by language:
+  - `index.html` — HTML structure
+  - `styles.css` — CSS styles
+  - `javascript/*.js` — JavaScript logic
 - No external dependencies or CDN resources
 
 ## Coding Standards
 - Always add comments to code explaining what it does
 - Comments should be clear and helpful for future maintainers
+- Each language must be kept in separate source files (HTML in .html, CSS in .css, JS in .js)
 
 ## GitHub Codespace
 - Port 3000 is auto-forwarded and opens preview

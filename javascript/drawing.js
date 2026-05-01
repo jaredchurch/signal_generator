@@ -148,29 +148,34 @@ function drawPowerAxis(ctx, W, H, padX, padBot, powerRange) {
     dbValues.push(db);
   }
 
-  // Always show -6 dB (amplitude = 0.5)
-  if (!dbValues.includes(-6)) {
-    dbValues.push(-6);
-    dbValues.sort((a, b) => b - a); // Sort descending
-  }
+  // Always show -6 dB (amplitude = 0.5) and minDB (bottom of y-axis)
+  [minDB, -6].forEach(db => {
+    if (!dbValues.includes(db)) {
+      dbValues.push(db);
+    }
+  });
+  dbValues.sort((a, b) => b - a); // Sort descending
 
   for (const db of dbValues) {
     // Map dB to y-position: minDB = 0 height, 0 dB = full height
     const barH = ((db - minDB) / Math.abs(minDB)) * graphH;
     const y = H - padBot - barH;
 
-    if (y < 5 || y > H - padBot - 2) continue;
+    // Skip if too close to top; allow bottom label (minDB) even at y = H - padBot
+    if (y < 5) continue;
 
-    // Draw grid line
-    ctx.strokeStyle='#1e2235';
-    ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(padX, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
+    // Draw grid line (skip for minDB at bottom)
+    if (db !== minDB) {
+      ctx.strokeStyle='#1e2235';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(padX, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
 
     // Draw label
-    ctx.fillText(`${db} dB`, padX - 5, y + 3);
+    ctx.fillText(`${db} dB`, padX - 5, Math.min(y + 3, H - padBot));
   }
 }
 
@@ -183,6 +188,8 @@ function drawLogFreqLabels(ctx,W,H,padX,padBot) {
     const x=padX+(Math.log(f/MIN_FREQ_LOG)/Math.log(maxDisplay/MIN_FREQ_LOG))*(W-padX-10);
     ctx.fillText(f>=1000?`${f/1000}k`:f, x, H-5);
   });
+  // Always show label at right end of x-axis (32k)
+  ctx.fillText('32k', W-5, H-5);
 }
 
 function drawNoiseTime(canvasId, type) {
