@@ -20,6 +20,11 @@ Web app with separate source files — no build system, tests, or CI.
   - `tasks.md` — Incomplete tasks and feature requests
   - `bugs.md` — Open bugs and issues
 
+## Commit Guidelines
+- **NEVER commit changes without explicit confirmation from the user**
+- Always ask before creating a commit
+- When user requests a commit, summarize the changes and ask for confirmation
+
 ## GitHub Codespace
 - Port 3000 is auto-forwarded and opens preview
 - Server auto-starts via `postStartCommand` in devcontainer.json
