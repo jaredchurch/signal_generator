@@ -16,6 +16,9 @@ Web app with separate source files — no build system, tests, or CI.
 - Always add comments to code explaining what it does
 - Comments should be clear and helpful for future maintainers
 - Each language must be kept in separate source files (HTML in .html, CSS in .css, JS in .js)
+- Project planning information stored in `.project/` directory:
+  - `tasks.md` — Incomplete tasks and feature requests
+  - `bugs.md` — Open bugs and issues
 
 ## GitHub Codespace
 - Port 3000 is auto-forwarded and opens preview
