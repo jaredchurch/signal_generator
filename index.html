@@ -227,25 +227,6 @@
     <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.8" oninput="onMasterVolumeChange()"/>
     <span id="master-vol-label">80%</span>
   </div>
-  <div class="flex-row" style="justify-content:center;margin-top:6px;gap:8px;font-size:.75rem;color:var(--muted);">
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-      Spectrum Range:
-      <select class="styled" id="spectrum-range" onchange="onSpectrumRangeChange()" style="font-size:.75rem;padding:2px 4px;">
-        <option value="8000">8 kHz</option>
-        <option value="16000">16 kHz</option>
-        <option value="32000" selected>32 kHz</option>
-      </select>
-    </label>
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-      Min Power:
-      <select class="styled" id="power-range" onchange="onPowerRangeChange()" style="font-size:.75rem;padding:2px 4px;">
-        <option value="0">0 dB (full)</option>
-        <option value="40" selected>40 dB</option>
-        <option value="60">60 dB</option>
-        <option value="80">80 dB</option>
-      </select>
-    </label>
-  </div>
 </header>
 
 <!-- ═══ TAB BAR ═══ -->
@@ -359,7 +340,14 @@
           <canvas id="p1-canvas-time"></canvas>
         </div>
         <div class="graph-wrap">
-          <h3>Spectrum Analyser <span class="tag tag-gen">Generated</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
+          <h3>Spectrum Analyser <span class="tag tag-gen">Generated</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span>
+            <select class="styled" id="power-range-p1-canvas-freq" onchange="onPowerRangeChange('p1-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
+              <option value="10">-10 dB</option>
+              <option value="20">-20 dB</option>
+              <option value="40" selected>-40 dB</option>
+              <option value="80">-80 dB</option>
+            </select>
+          </h3>
           <canvas id="p1-canvas-freq"></canvas>
         </div>
       </div>
@@ -472,7 +460,14 @@
         </div>
 
         <div class="graph-wrap" style="position:relative;">
-          <h3>Spectrum Analyser <span class="tag tag-rec" id="rec-freq-tag">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span></h3>
+          <h3>Spectrum Analyser <span class="tag tag-rec" id="rec-freq-tag">Recorded</span> <span style="font-size:.65rem;color:var(--muted);">0 – 32 kHz</span>
+            <select class="styled" id="power-range-rec-canvas-freq" onchange="onPowerRangeChange('rec-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
+              <option value="10">-10 dB</option>
+              <option value="20">-20 dB</option>
+              <option value="40" selected>-40 dB</option>
+              <option value="80">-80 dB</option>
+            </select>
+          </h3>
           <canvas id="rec-canvas-freq"></canvas>
           <div class="no-data" id="no-rec-freq">Record audio to see spectrum</div>
         </div>
@@ -558,7 +553,14 @@
           <div class="no-data" id="tuner-no-time">Start tuner to see waveform</div>
         </div>
         <div class="graph-wrap">
-          <h3>Spectrum Analyser <span class="tag tag-live" id="tuner-freq-tag" style="display:none;">Live</span></h3>
+          <h3>Spectrum Analyser <span class="tag tag-live" id="tuner-freq-tag" style="display:none;">Live</span>
+            <select class="styled" id="power-range-tuner-canvas-freq" onchange="onPowerRangeChange('tuner-canvas-freq')" style="font-size:.7rem;padding:2px 4px;margin-left:8px;">
+              <option value="10">-10 dB</option>
+              <option value="20">-20 dB</option>
+              <option value="40" selected>-40 dB</option>
+              <option value="80">-80 dB</option>
+            </select>
+          </h3>
           <canvas id="tuner-canvas-freq"></canvas>
           <div class="no-data" id="tuner-no-freq">Start tuner to see spectrum</div>
         </div>

@@ -30,7 +30,7 @@ function drawStaticFreq(canvasId, components) {
   if (!active.length){drawNoDataText(ctx,W,H,'Add frequencies');return;}
 
   // Convert component data to frequency spectrum data for drawFreqBars
-  const maxDisplay = getSpectrumRange();
+  const maxDisplay = 32000; // Fixed max display frequency (spectrum range selector removed)
   const sampleRate = 44100; // Assume standard sample rate for display
   const nyquist = sampleRate / 2;
   const bufLen = 2048; // Match typical analyser fftSize
@@ -48,7 +48,7 @@ function drawStaticFreq(canvasId, components) {
   });
 
   // Use shared spectrum display function
-  drawFreqBars(ctx, W, H, freqData, sampleRate);
+  drawFreqBars(ctx, W, H, freqData, sampleRate, canvasId);
 
   // Draw frequency labels for components
   const padX = 40;
@@ -85,17 +85,18 @@ function drawLiveFreq(canvasId, analyser) {
   analyser.getByteFrequencyData(data);
   const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
   drawGrid(ctx,W,H);
-  drawFreqBars(ctx,W,H,data,sampleRate);
+  drawFreqBars(ctx,W,H,data,sampleRate,canvasId);
 }
 
-function drawFreqBars(ctx, W, H, data, sampleRate) {
+function drawFreqBars(ctx, W, H, data, sampleRate, canvasId) {
   const nyquist = sampleRate/2;
-  const maxDisplay = Math.min(getSpectrumRange(), nyquist);
+  const maxDisplay = Math.min(32000, nyquist); // Fixed max display (spectrum range selector removed)
   const MIN_FREQ_LOG = 10;
   const padX = 40;
   const padBot = 22;
   const usableW = W - padX - 10;
-  const powerRange = getPowerRange(); // dB range to display
+  const powerRange = getPowerRange(canvasId); // dB range to display (10=-10dB, 20=-20dB, etc.)
+  const minDB = -powerRange; // Minimum dB value (e.g., -40 dB)
 
   // Find max value for normalization
   let maxVal = 0;
@@ -104,15 +105,18 @@ function drawFreqBars(ctx, W, H, data, sampleRate) {
 
   // Draw bars at logarithmic positions
   const numBars = 200;
+  const graphH = H - padBot - 5;
   for(let i=0;i<numBars;i++){
     const frac = i/numBars;
     const freq = MIN_FREQ_LOG * Math.pow(maxDisplay/MIN_FREQ_LOG, frac);
     const bin = Math.floor((freq/nyquist)*data.length);
     if(bin >= data.length) break;
     const x = padX + frac * usableW;
-    // Scale bar height based on power range (0 dB = full range, 80 dB = only loudest signals)
+    // Convert linear value to dB
     const normalizedVal = data[bin] / maxVal;
-    const barH = Math.pow(normalizedVal, powerRange / 40) * (H - padBot - 5);
+    const db = 20 * Math.log10(Math.max(normalizedVal, 0.00000001)); // Avoid -Infinity
+    // Map dB to height: minDB = 0 height, 0 dB = full height
+    const barH = Math.max(0, (db - minDB) / Math.abs(minDB)) * graphH;
     const hue = 200+(data[bin]/255)*60;
     ctx.fillStyle=`hsl(${hue},80%,60%)`;
     const barW = Math.max(1, (1/numBars) * usableW - 1);
@@ -134,19 +138,25 @@ function drawPowerAxis(ctx, W, H, padX, padBot, powerRange) {
   ctx.textAlign='right';
 
   const graphH = H - padBot - 5;
+  const minDB = -powerRange; // powerRange is positive (10, 20, 40, 80), minDB is negative
 
   // dB values to display based on power range
   const dbValues = [0];
-  const step = powerRange <= 40 ? 10 : 20;
-  for (let db = -step; db >= -powerRange; db -= step) {
+  const step = powerRange <= 20 ? 5 : (powerRange <= 40 ? 10 : 20);
+  for (let db = -step; db >= minDB; db -= step) {
+    if (db === -5) continue; // -5 dB is not important, skip it
     dbValues.push(db);
   }
 
+  // Always show -6 dB (amplitude = 0.5)
+  if (!dbValues.includes(-6)) {
+    dbValues.push(-6);
+    dbValues.sort((a, b) => b - a); // Sort descending
+  }
+
   for (const db of dbValues) {
-    // Map dB to y-position using same formula as bar height
-    // barH = 10^(dB/20 * powerRange/40) * graphH
-    const exponent = (db / 20) * (powerRange / 40);
-    const barH = Math.pow(10, exponent) * graphH;
+    // Map dB to y-position: minDB = 0 height, 0 dB = full height
+    const barH = ((db - minDB) / Math.abs(minDB)) * graphH;
     const y = H - padBot - barH;
 
     if (y < 5 || y > H - padBot - 2) continue;
@@ -166,7 +176,7 @@ function drawPowerAxis(ctx, W, H, padX, padBot, powerRange) {
 
 function drawLogFreqLabels(ctx,W,H,padX,padBot) {
   ctx.fillStyle='#64748b'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
-  const maxDisplay = getSpectrumRange();
+  const maxDisplay = 32000; // Fixed max display (spectrum range selector removed)
   const MIN_FREQ_LOG = 10;
   [10,20,50,100,200,500,1000,2000,5000,10000,20000].forEach(f=>{
     if(f>maxDisplay) return;
@@ -196,7 +206,7 @@ function drawNoiseFreq(canvasId, type) {
   const padBot=22;
   const padX=40;
   const minFreq = 10;
-  const maxDisplay = getSpectrumRange();
+  const maxDisplay = 32000; // Fixed max display (spectrum range selector removed)
   const usableW = W - padX - 10;
   for(let i=0;i<W;i++){
     const frac = i/usableW;

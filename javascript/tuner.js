@@ -14,6 +14,8 @@ const TUNER_SAMPLE_RATE = 44100;
 function initTuner() {
   const sel = document.getElementById('tuner-note-select');
   NOTE_NAMES.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  // Default to Middle C
+  setTunerMiddleC();
 }
 
 function onTunerNoteSelect() {
@@ -334,11 +336,11 @@ function drawTunerFreq() {
   drawGrid(ctx, W, H);
 
   // Use shared spectrum display function
-  drawFreqBars(ctx, W, H, freqData, sampleRate);
+  drawFreqBars(ctx, W, H, freqData, sampleRate, 'tuner-canvas-freq');
 
   // Draw target marker if set
   if (tunerTargetFreq) {
-    const maxDisplay = getSpectrumRange();
+    const maxDisplay = 32000; // Fixed max display (spectrum range selector removed)
     const MIN_FREQ_LOG = 10;
     const padX = 40;
     const padBot = 22;

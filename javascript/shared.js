@@ -54,31 +54,26 @@ function onMasterVolumeChange() {
   if (masterGain) masterGain.gain.value = v;
 }
 
-// Global spectrum range (synced across all instances)
-function getSpectrumRange() {
-  return parseInt(document.getElementById('spectrum-range')?.value || 32000);
+// Power range (y-axis) for spectrum analyzer - global setting synced across all pages
+let globalPowerRange = 40; // Default -40 dB
+
+function getPowerRange(canvasId) {
+  return globalPowerRange;
 }
 
-function onSpectrumRangeChange() {
-  // Redraw all active spectrum displays
-  if (typeof drawP1Graphs === 'function' && document.getElementById('page-presets').classList.contains('active')) {
-    drawP1Graphs();
+function onPowerRangeChange(canvasId) {
+  const newVal = parseInt(document.getElementById('power-range-' + canvasId)?.value || 40);
+  globalPowerRange = newVal;
+
+  // Sync all dropdowns to the new value
+  ['p1-canvas-freq', 'rec-canvas-freq', 'tuner-canvas-freq'].forEach(id => {
+    const dd = document.getElementById('power-range-' + id);
+    if (dd && dd.value != newVal) dd.value = newVal;
+  });
+
+  // Redraw the specific spectrum display
+  if (canvasId === 'p1-canvas-freq') {
+    if (typeof drawP1Graphs === 'function') drawP1Graphs();
   }
-  // Force redraw of active tab's spectrum
-  const activeTab = document.querySelector('.tab.active');
-  if (activeTab) {
-    const idx = Array.from(document.querySelectorAll('.tab')).indexOf(activeTab);
-    const pages = ['page-presets', 'page-recorder', 'page-tuner', 'page-metronome', 'page-pads'];
-    if (pages[idx]) showTab(pages[idx]);
-  }
-}
-
-// Power range (y-axis) for spectrum analyzer
-function getPowerRange() {
-  return parseInt(document.getElementById('power-range')?.value || 40);
-}
-
-function onPowerRangeChange() {
-  // Same redraw logic as spectrum range change
-  onSpectrumRangeChange();
+  // For recorder and tuner, the live draw functions will pick up the new power range automatically
 }
