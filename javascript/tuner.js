@@ -14,6 +14,8 @@ const TUNER_SAMPLE_RATE = 44100;
 function initTuner() {
   const sel = document.getElementById('tuner-note-select');
   NOTE_NAMES.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  // Default to Middle C
+  setTunerMiddleC();
 }
 
 function onTunerNoteSelect() {
@@ -38,6 +40,94 @@ function setTunerMiddleC() {
   onTunerNoteSelect();
 }
 
+let tunerNoteOsc = null;
+let tunerNoteGain = null;
+let tunerNotePlaying = false;
+let tunerAlternating = false;
+let tunerAlternatingInterval = null;
+const ALTERNATING_PERIOD = 1000; // 1 second
+
+function togglePlayTargetNote() {
+  if (tunerNotePlaying || tunerAlternating) {
+    stopTargetNote();
+  } else {
+    startTargetNote();
+  }
+}
+
+function playNoteSound() {
+  if (!tunerTargetFreq || tunerNotePlaying) return;
+  const now = audioCtx.currentTime;
+  tunerNoteOsc = audioCtx.createOscillator();
+  tunerNoteGain = audioCtx.createGain();
+  tunerNoteOsc.type = 'sine';
+  tunerNoteOsc.frequency.setValueAtTime(tunerTargetFreq, now);
+  tunerNoteGain.gain.setValueAtTime(0, now);
+  tunerNoteGain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+  tunerNoteOsc.connect(tunerNoteGain);
+  tunerNoteGain.connect(getMasterGain());
+  tunerNoteOsc.start(now);
+  tunerNotePlaying = true;
+}
+
+function stopNoteSound() {
+  if (tunerNoteOsc) {
+    try {
+      tunerNoteGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      tunerNoteOsc.stop(audioCtx.currentTime + 0.1);
+    } catch(e) {}
+    tunerNoteOsc = null;
+    tunerNoteGain = null;
+  }
+  tunerNotePlaying = false;
+}
+
+function startTargetNote() {
+  if (!tunerTargetFreq) return;
+  ensureAudioCtx();
+  stopTargetNote(); // Stop any existing note
+
+  if (tunerActive) {
+    // Tuner is active, enter alternating mode
+    tunerAlternating = true;
+    playNoteSound();
+
+    // Set up timer to alternate every second
+    tunerAlternatingInterval = setInterval(() => {
+      if (tunerNotePlaying) {
+        stopNoteSound();
+        document.getElementById('tuner-status').textContent = 'Listening...';
+      } else {
+        playNoteSound();
+        document.getElementById('tuner-status').textContent = 'Note playing...';
+      }
+    }, ALTERNATING_PERIOD);
+
+    document.getElementById('tuner-play-note-btn').textContent = '⏹ Alternating';
+    document.getElementById('tuner-status').textContent = 'Note playing...';
+  } else {
+    // Normal behavior - just play the note
+    playNoteSound();
+    document.getElementById('tuner-play-note-btn').textContent = '⏹ Stop Note';
+  }
+}
+
+function stopTargetNote() {
+  // Stop alternating mode if active
+  if (tunerAlternating) {
+    tunerAlternating = false;
+    if (tunerAlternatingInterval) {
+      clearInterval(tunerAlternatingInterval);
+      tunerAlternatingInterval = null;
+    }
+  }
+  stopNoteSound();
+  document.getElementById('tuner-play-note-btn').textContent = '🔊 Play Note';
+  if (tunerActive) {
+    document.getElementById('tuner-status').textContent = 'Listening...';
+  }
+}
+
 async function toggleTuner() {
   tunerActive ? stopTuner() : await startTuner();
 }
@@ -48,15 +138,25 @@ async function startTuner() {
     return;
   }
   try {
+    // Stop other mic-using features to avoid conflicts and feedback
+    if (typeof stopLiveMonitor === 'function') stopLiveMonitor();
+    if (typeof stopRecording === 'function') stopRecording();
+
     const stream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
     tunerStream = stream;
-    tunerAudioCtx = ensureAudioCtx();
+    
+    // Use a separate AudioContext for the tuner mic input.
+    // This physically isolates the microphone from the shared audioCtx 
+    // that is connected to the speakers, preventing any possibility of feedback.
+    tunerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tunerAudioCtx.state === 'suspended') await tunerAudioCtx.resume();
+
     tunerAnalyser = tunerAudioCtx.createAnalyser();
     tunerAnalyser.fftSize = TUNER_FFT_SIZE;
     tunerAnalyser.smoothingTimeConstant = 0.8;
     const source = tunerAudioCtx.createMediaStreamSource(stream);
     source.connect(tunerAnalyser);
-    tunerAnalyser.connect(getMasterGain());
+    // Analyser is NOT connected to tunerAudioCtx.destination - completely silent
 
     tunerActive = true;
     document.getElementById('tuner-start-btn').textContent = '⏹ Stop Tuner';
@@ -70,9 +170,12 @@ async function startTuner() {
 
     (function tunerLoop() {
       if (!tunerActive) return;
-      processTunerData();
-      drawLiveTime('tuner-canvas-time', tunerAnalyser);
-      drawTunerFreq();
+      if (!tunerNotePlaying) {
+        // Only process and draw when note is not playing (listening phase)
+        processTunerData();
+        drawLiveTime('tuner-canvas-time', tunerAnalyser);
+        drawTunerFreq();
+      }
       tunerAnim = requestAnimationFrame(tunerLoop);
     })();
   } catch(e) {
@@ -86,10 +189,24 @@ function stopTuner() {
     tunerStream.getTracks().forEach(t => t.stop());
     tunerStream = null;
   }
-  // Don't close shared audioCtx - just disconnect analyser
+  // Close the separate tuner AudioContext
+  if (tunerAudioCtx && tunerAudioCtx.state !== 'closed') {
+    tunerAudioCtx.close();
+  }
+  tunerAudioCtx = null;
   tunerAnalyser = null;
   tunerActive = false;
+  // Stop alternating mode if active
+  if (tunerAlternating) {
+    tunerAlternating = false;
+    if (tunerAlternatingInterval) {
+      clearInterval(tunerAlternatingInterval);
+      tunerAlternatingInterval = null;
+    }
+  }
+  stopNoteSound();
   document.getElementById('tuner-start-btn').textContent = '▶ Start Tuner';
+  document.getElementById('tuner-play-note-btn').textContent = '🔊 Play Note';
   document.getElementById('tuner-status').textContent = 'Press Start to begin';
   document.getElementById('tuner-status').classList.remove('ok');
   document.getElementById('tuner-live-tag').style.display = 'none';
@@ -101,53 +218,76 @@ function stopTuner() {
 }
 
 function resetTunerDisplay() {
-  const needle = document.getElementById('tuner-needle');
-  needle.style.transform = 'rotate(0deg)';
-  needle.classList.remove('shaking');
+  const vbar = document.getElementById('tuner-vbar');
+  const barLow = document.getElementById('tuner-bar-low');
+  const barMid = document.getElementById('tuner-bar-mid');
+  const barHigh = document.getElementById('tuner-bar-high');
+  vbar.style.left = '50%';
+  barLow.style.background = 'var(--border)';
+  barMid.style.background = 'var(--border)';
+  barHigh.style.background = 'var(--border)';
   document.getElementById('tuner-display-cents').textContent = '—';
   document.getElementById('tuner-indicator').textContent = 'OFF';
   document.getElementById('tuner-indicator').className = 'tuner-indicator tuner-off';
 }
 
 function processTunerData() {
+  // Skip pitch detection while reference note is playing to avoid feedback loop
+  if (tunerNotePlaying) return;
   if (!tunerAnalyser || !tunerTargetFreq) return;
 
   const bufLen = tunerAnalyser.frequencyBinCount;
   const data = new Float32Array(bufLen);
   tunerAnalyser.getFloatTimeDomainData(data);
 
+  const sampleRate = tunerAudioCtx ? tunerAudioCtx.sampleRate : 44100;
   // Detect pitch using autocorrelation
-  const detectedFreq = detectPitchAutoCorr(data, TUNER_SAMPLE_RATE, 50, 2000);
+  const detectedFreq = detectPitchAutoCorr(data, sampleRate, 50, 2000);
   const centsLabel = document.getElementById('tuner-display-cents');
   const indicator = document.getElementById('tuner-indicator');
-  const needle = document.getElementById('tuner-needle');
+  const vbar = document.getElementById('tuner-vbar');
+  const barLow = document.getElementById('tuner-bar-low');
+  const barMid = document.getElementById('tuner-bar-mid');
+  const barHigh = document.getElementById('tuner-bar-high');
 
   if (!detectedFreq || detectedFreq < 30 || detectedFreq > 5000 || !isStablePitch(data)) {
     centsLabel.textContent = '—';
     indicator.textContent = 'NO pitch';
     indicator.className = 'tuner-indicator tuner-off';
-    needle.style.transform = 'rotate(0deg)';
-    needle.classList.add('shaking');
+    vbar.style.left = '50%';
+    barLow.style.background = 'var(--border)';
+    barMid.style.background = 'var(--border)';
+    barHigh.style.background = 'var(--border)';
     return;
   }
 
   const cents = Math.round(1200 * Math.log2(detectedFreq / tunerTargetFreq));
   centsLabel.textContent = (cents > 0 ? '+' : '') + cents + '¢';
 
+  // Update vertical bar position (0% = -50 cents, 100% = +50 cents)
+  const pct = Math.max(0, Math.min(100, (cents + 50) * 2));
+  vbar.style.left = pct + '%';
+
+  // Update bar colors based on deviation
   if (Math.abs(cents) <= 5) {
     indicator.textContent = 'IN TUNE';
     indicator.className = 'tuner-indicator in-tune';
+    barLow.style.background = 'var(--green)';
+    barMid.style.background = 'var(--green)';
+    barHigh.style.background = 'var(--green)';
   } else if (cents > 0) {
     indicator.textContent = 'TOO HIGH';
     indicator.className = 'tuner-indicator high';
+    barLow.style.background = 'var(--red)';
+    barMid.style.background = cents > 25 ? 'var(--red)' : 'var(--border)';
+    barHigh.style.background = 'var(--red)';
   } else {
     indicator.textContent = 'TOO LOW';
     indicator.className = 'tuner-indicator low';
+    barLow.style.background = 'var(--accent)';
+    barMid.style.background = cents < -25 ? 'var(--accent)' : 'var(--border)';
+    barHigh.style.background = 'var(--accent)';
   }
-
-  const angle = Math.max(-50, Math.min(50, cents));
-  needle.style.transform = `rotate(${angle}deg)`;
-  needle.classList.remove('shaking');
 }
 
 function detectPitchAutoCorr(data, sampleRate, minFreq, maxFreq) {
@@ -189,65 +329,34 @@ function drawTunerFreq() {
   const ctx = setupCanvas(canvas);
   const {W, H} = dims(canvas);
 
-  const bufLen = tunerAnalyser.frequencyBinCount;
-  const freqData = new Uint8Array(bufLen);
+  const freqData = new Uint8Array(tunerAnalyser.frequencyBinCount);
   tunerAnalyser.getByteFrequencyData(freqData);
-  const sampleRate = TUNER_SAMPLE_RATE;
+  const sampleRate = tunerAudioCtx ? tunerAudioCtx.sampleRate : 44100;
 
   drawGrid(ctx, W, H);
 
-  const maxDisplay = 8000;
-  const MIN_FREQ_LOG = 20;
-  const padX = 40;
-  const padBot = 22;
-  const usableW = W - padX - 10;
-
-  let maxVal = 0;
-  for (let i = 0; i < freqData.length; i++) if (freqData[i] > maxVal) maxVal = freqData[i];
-  if (maxVal === 0) maxVal = 255;
-
-  const numBars = 200;
-  for (let i = 0; i < numBars; i++) {
-    const frac = i / numBars;
-    const freq = MIN_FREQ_LOG * Math.pow(maxDisplay / MIN_FREQ_LOG, frac);
-    const bin = Math.floor((freq / (sampleRate / 2)) * freqData.length);
-    if (bin >= freqData.length) break;
-    const x = padX + frac * usableW;
-    const barH = (freqData[bin] / maxVal) * (H - padBot - 5);
-    const isTargetBin = tunerTargetFreq && Math.abs(freq - tunerTargetFreq) < maxDisplay * 0.03;
-    const hue = isTargetBin ? 140 : 200 + (freqData[bin] / 255) * 60;
-    ctx.fillStyle = isTargetBin ? `rgba(52, 211, 153, .8)` : `hsl(${hue}, 80%, 60%)`;
-    const barW = Math.max(1, (1 / numBars) * usableW - 1);
-    ctx.fillRect(x, H - padBot - barH, barW, barH);
-  }
+  // Use shared spectrum display function
+  drawFreqBars(ctx, W, H, freqData, sampleRate, 'tuner-canvas-freq');
 
   // Draw target marker if set
-  if (tunerTargetFreq && tunerTargetFreq <= maxDisplay) {
-    const targetFrac = Math.log(tunerTargetFreq / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG);
-    const targetX = padX + targetFrac * usableW;
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(targetX, 0);
-    ctx.lineTo(targetX, H - padBot);
-    ctx.stroke();
-    ctx.setLineDash([]);
+  if (tunerTargetFreq) {
+    const maxDisplay = 32000; // Fixed max display (spectrum range selector removed)
+    const MIN_FREQ_LOG = 10;
+    const padX = 40;
+    const padBot = 22;
+    const usableW = W - padX - 10;
+
+    if (tunerTargetFreq <= maxDisplay) {
+      const targetFrac = Math.log(tunerTargetFreq / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG);
+      const targetX = padX + targetFrac * usableW;
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(targetX, 0);
+      ctx.lineTo(targetX, H - padBot);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
-
-  ctx.strokeStyle = '#2e3250';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(padX, H - padBot);
-  ctx.lineTo(W, H - padBot);
-  ctx.stroke();
-
-  ctx.fillStyle = '#64748b';
-  ctx.font = '10px Segoe UI';
-  ctx.textAlign = 'center';
-  [50, 100, 200, 500, 1000, 2000, 4000, 8000].forEach(f => {
-    if (f > maxDisplay) return;
-    const x = padX + (Math.log(f / MIN_FREQ_LOG) / Math.log(maxDisplay / MIN_FREQ_LOG)) * usableW;
-    ctx.fillText(f >= 1000 ? `${f/1000}k` : f, x, H - 5);
-  });
 }

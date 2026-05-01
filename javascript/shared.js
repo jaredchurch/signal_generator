@@ -53,3 +53,27 @@ function onMasterVolumeChange() {
   document.getElementById('master-vol-label').textContent = Math.round(v*100)+'%';
   if (masterGain) masterGain.gain.value = v;
 }
+
+// Power range (y-axis) for spectrum analyzer - global setting synced across all pages
+let globalPowerRange = 10; // Default -10 dB
+
+function getPowerRange(canvasId) {
+  return globalPowerRange;
+}
+
+function onPowerRangeChange(canvasId) {
+  const newVal = parseInt(document.getElementById('power-range-' + canvasId)?.value || 40);
+  globalPowerRange = newVal;
+
+  // Sync all dropdowns to the new value
+  ['p1-canvas-freq', 'rec-canvas-freq', 'tuner-canvas-freq'].forEach(id => {
+    const dd = document.getElementById('power-range-' + id);
+    if (dd && dd.value != newVal) dd.value = newVal;
+  });
+
+  // Redraw the specific spectrum display
+  if (canvasId === 'p1-canvas-freq') {
+    if (typeof drawP1Graphs === 'function') drawP1Graphs();
+  }
+  // For recorder and tuner, the live draw functions will pick up the new power range automatically
+}
