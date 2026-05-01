@@ -77,3 +77,21 @@ function onPowerRangeChange(canvasId) {
   }
   // For recorder and tuner, the live draw functions will pick up the new power range automatically
 }
+
+// ── Issue Submission ──
+function submitGitHubIssue() {
+  const pageNames = {
+    'page-presets': 'Signal Generator',
+    'page-recorder': 'Audio Recorder',
+    'page-tuner': 'Tuner',
+    'page-metronome': 'Metronome',
+    'page-pads': 'Synth Pads'
+  };
+  let currentPage = 'Unknown';
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    currentPage = pageNames[activePage.id] || activePage.id;
+  }
+  const body = encodeURIComponent(`**Reported via:** Audio Tools web interface\n**Page:** ${currentPage}\n\n<!-- Describe your bug or request here -->`);
+  window.open(`https://github.com/jaredchurch/signal_generator/issues/new?body=${body}`, '_blank');
+}
