@@ -17,8 +17,18 @@ Web app with separate source files — no build system, tests, or CI.
 - Comments should be clear and helpful for future maintainers
 - Each language must be kept in separate source files (HTML in .html, CSS in .css, JS in .js)
 - Project planning information stored in `.project/` directory:
+  - `requirements.md` — All requirements with REQ-xxxx format (update when new requirements are added)
   - `tasks.md` — Incomplete tasks and feature requests
   - `bugs.md` — Open bugs and issues
+
+## Requirements Management
+- **ALWAYS update `.project/requirements.md` when new requirements are requested**
+- Each requirement must have format: `- [x] REQ-xxxx: description` (completed) or `- [ ] REQ-xxxx: description` (not done)
+- REQ-xxxx where x is a numerical digit (0001, 0002, etc.)
+- Review `requirements.md` for consistency and raise questions with user if inconsistencies found
+
+## Language
+- **ALL communication and code comments must be in English**
 
 ## Commit Guidelines
 - **NEVER commit changes without explicit confirmation from the user**
