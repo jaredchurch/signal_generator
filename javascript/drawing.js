@@ -99,7 +99,7 @@ function drawFreqBars(ctx, W, H, data, sampleRate, canvasId) {
   const minDB = -powerRange; // Minimum dB value (e.g., -40 dB)
 
   // Draw bars at logarithmic positions
-  const numBars = 200;
+  const numBars = 1000;
   const graphH = H - padBot - 5;
   for(let i=0;i<numBars;i++){
     const frac = i/numBars;
