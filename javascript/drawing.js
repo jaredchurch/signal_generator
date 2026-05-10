@@ -98,11 +98,6 @@ function drawFreqBars(ctx, W, H, data, sampleRate, canvasId) {
   const powerRange = getPowerRange(canvasId); // dB range to display (10=-10dB, 20=-20dB, etc.)
   const minDB = -powerRange; // Minimum dB value (e.g., -40 dB)
 
-  // Find max value for normalization
-  let maxVal = 0;
-  for(let i=0;i<data.length;i++) if(data[i]>maxVal) maxVal=data[i];
-  if(maxVal===0) maxVal=255;
-
   // Draw bars at logarithmic positions
   const numBars = 200;
   const graphH = H - padBot - 5;
@@ -112,9 +107,8 @@ function drawFreqBars(ctx, W, H, data, sampleRate, canvasId) {
     const bin = Math.floor((freq/nyquist)*data.length);
     if(bin >= data.length) break;
     const x = padX + frac * usableW;
-    // Convert linear value to dB
-    const normalizedVal = data[bin] / maxVal;
-    const db = 20 * Math.log10(Math.max(normalizedVal, 0.00000001)); // Avoid -Infinity
+    // Convert to dB power relative to full scale (255 = 0 dBFS)
+    const db = 20 * Math.log10(Math.max(data[bin] / 255, 0.00000001)); // Avoid -Infinity
     // Map dB to height: minDB = 0 height, 0 dB = full height
     const barH = Math.max(0, (db - minDB) / Math.abs(minDB)) * graphH;
     const hue = 200+(data[bin]/255)*60;
@@ -148,8 +142,8 @@ function drawPowerAxis(ctx, W, H, padX, padBot, powerRange) {
     dbValues.push(db);
   }
 
-  // Always show -6 dB (amplitude = 0.5) and minDB (bottom of y-axis)
-  [minDB, -6].forEach(db => {
+  // Always show -3 dB (50% power) and minDB (bottom of y-axis)
+  [minDB, -3].forEach(db => {
     if (!dbValues.includes(db)) {
       dbValues.push(db);
     }
@@ -215,6 +209,8 @@ function drawNoiseFreq(canvasId, type) {
   const minFreq = 10;
   const maxDisplay = 32000; // Fixed max display (spectrum range selector removed)
   const usableW = W - padX - 10;
+  const graphH = H - padBot - 10;
+  const minDB = -40; // Fixed power range for noise display
   for(let i=0;i<W;i++){
     const frac = i/usableW;
     const freq = minFreq * Math.pow(maxDisplay/minFreq, frac);
@@ -223,7 +219,9 @@ function drawNoiseFreq(canvasId, type) {
     if (type==='white') amp=0.85+(Math.random()-.5)*.1;
     else if (type==='pink') amp=(1-f*.7)*(0.85+(Math.random()-.5)*.1);
     else amp=Math.pow(1-f,2)*(0.9+(Math.random()-.5)*.05);
-    const barH=amp*(H-padBot-10);
+    // Convert amplitude to dB power
+    const db = 20 * Math.log10(Math.max(amp, 0.00000001));
+    const barH = Math.max(0, (db - minDB) / Math.abs(minDB)) * graphH;
     ctx.fillStyle=type==='white'?'rgba(200,210,255,.5)':type==='pink'?'rgba(251,150,200,.5)':'rgba(180,120,80,.5)';
     ctx.fillRect(i,H-padBot-barH,1,barH);
   }
