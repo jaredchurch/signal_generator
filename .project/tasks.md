@@ -5,6 +5,7 @@
 
 ## Spectrum Analyzer
 - [ ] 9. more granular bars on spectrum analyser (all instances)
+- [ ] 1. all spectrum analyzers should present scale based on frequency power rather than amplitude
 
 ## Tuner
 - [ ] 8. add option to remove "room noise" from spectrum analyser for the tuner.

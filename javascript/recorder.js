@@ -26,11 +26,20 @@ let pbLoopStartTime = 0;
 let recAnalyser    = null;
 let recAnalyserCtx = null;
 let recAnim        = null;
+let liveMicGain    = null;
+let recMicGain     = null;
 
 function onRecVolChange() {
   const v=parseFloat(document.getElementById('rec-vol').value);
   document.getElementById('rec-vol-label').textContent=Math.round(v*100)+'%';
   if (pbGain) pbGain.gain.value=v;
+}
+
+function onMicGainChange() {
+  const v = parseFloat(document.getElementById('mic-gain').value);
+  document.getElementById('mic-gain-label').textContent = Math.round(v*100)+'%';
+  if (liveMicGain) liveMicGain.gain.value = v;
+  if (recMicGain) recMicGain.gain.value = v;
 }
 
 async function toggleLiveMonitor() {
@@ -51,11 +60,14 @@ async function startLiveMonitor() {
     // Create a separate AudioContext that is NEVER connected to speakers
     // This prevents any possibility of mic audio reaching the output
     liveCtx = new (window.AudioContext||window.webkitAudioContext)();
+    liveMicGain = liveCtx.createGain();
+    liveMicGain.gain.value = parseFloat(document.getElementById('mic-gain').value);
     liveAnalyser = liveCtx.createAnalyser();
     liveAnalyser.fftSize = 8192;
     liveAnalyser.smoothingTimeConstant = 0.6;
     const source = liveCtx.createMediaStreamSource(stream);
-    source.connect(liveAnalyser);
+    source.connect(liveMicGain);
+    liveMicGain.connect(liveAnalyser);
     // Analyser is NOT connected to any destination - completely silent
 
     isLiveMonitor = true;
@@ -127,11 +139,14 @@ async function startRecording() {
 
     // Use a separate context for the recording analyser to avoid any possibility of feedback
     recAnalyserCtx = new (window.AudioContext || window.webkitAudioContext)();
+    recMicGain = recAnalyserCtx.createGain();
+    recMicGain.gain.value = parseFloat(document.getElementById('mic-gain').value);
     recAnalyser = recAnalyserCtx.createAnalyser();
     recAnalyser.fftSize = 8192;
     recAnalyser.smoothingTimeConstant = 0.6;
     const micSource = recAnalyserCtx.createMediaStreamSource(stream);
-    micSource.connect(recAnalyser);
+    micSource.connect(recMicGain);
+    recMicGain.connect(recAnalyser);
 
     mediaRecorder=new MediaRecorder(stream);
     mediaRecorder.ondataavailable=e=>recChunks.push(e.data);

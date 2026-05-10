@@ -195,6 +195,11 @@
             <span>Enable live monitoring</span>
           </label>
         </div>
+        <div class="vol-row" style="margin-bottom:12px;">
+          <label class="small">Mic Gain</label>
+          <input type="range" id="mic-gain" min="0" max="2" step="0.01" value="1" oninput="onMicGainChange()"/>
+          <span id="mic-gain-label">100%</span>
+        </div>
         <div class="rec-status" id="live-status">Monitor off</div>
       </div>
 
